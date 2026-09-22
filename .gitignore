@@ -1,0 +1,43 @@
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.local
+
+# Python / tooling
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Agent-local state
+data/
+state/
+memory/
+knowledge-index/
+sessions/
+conversations/
+cache/
+.cache/
+
+# Local AI assets
+models/
+weights/
+datasets/
+generated/
+outputs/
+
+# Editor / OS
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
