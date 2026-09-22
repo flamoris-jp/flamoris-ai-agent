@@ -17,7 +17,7 @@ The Agent may own:
 - knowledge references and retrieval context;
 - prompts and agent policy;
 - tool/capability registration;
-- orchestration metadata;
+- persistent Agent-level orchestration metadata;
 - agent-action provenance.
 
 The Agent must not silently become the authority for:
@@ -63,11 +63,13 @@ The Agent must not silently become the authority for:
 
 Use for MCP-native language, reasoning, coding, and related intelligence capabilities.
 
+Intelligence MCP may perform bounded task coordination or multi-agent execution as part of an intelligence request. Persistent Agent identity, conversations, memory, and long-lived workflow context remain Agent-owned.
+
 Do not duplicate provider routing or runtime-specific adapters inside the Agent unless an Issue explicitly establishes a different boundary.
 
 ### `flamoris-generation-mcp`
 
-Use for generative-media workflows, jobs, and assets.
+Use for generative-media and closely related media-analysis workflows, jobs, and assets.
 
 Do not mirror generation job stores or provider execution authority inside the Agent.
 
