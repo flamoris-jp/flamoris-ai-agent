@@ -19,7 +19,7 @@ The Agent is planned to own:
 - knowledge references and retrieval context;
 - prompts and agent policies;
 - tool registration, capability checks, and tool invocation;
-- orchestration across intelligence and generation services;
+- persistent Agent-level orchestration across intelligence and generation services;
 - provenance needed to understand why an agent acted or answered as it did.
 
 The exact storage model, APIs, and runtime implementation are not defined by this initial repository setup.
@@ -45,11 +45,11 @@ These are boundaries, not mandatory layers.
 
 [flamoris-intelligence-mcp](https://github.com/flamoris-jp/flamoris-intelligence-mcp) is the planned MCP-native, provider-neutral gateway for language, reasoning, coding, and related intelligence capabilities.
 
-The Agent may use it, but should not absorb model/provider runtime ownership.
+The Agent may use it, but should not absorb model/provider runtime ownership. If Intelligence MCP performs bounded task coordination or multi-agent execution inside an intelligence request, the Agent still remains the authority for persistent Agent identity, conversation, memory, and long-lived workflow context.
 
 ### FLAMORIS Generation MCP
 
-[flamoris-generation-mcp](https://github.com/flamoris-jp/flamoris-generation-mcp) owns generative-media jobs, workflows, and assets.
+[flamoris-generation-mcp](https://github.com/flamoris-jp/flamoris-generation-mcp) owns generative-media and closely related media-analysis workflows, jobs, and assets.
 
 The Agent may request generation, but should not become a second owner of generation job state.
 
