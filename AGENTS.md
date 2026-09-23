@@ -6,7 +6,15 @@ These instructions apply to the entire repository.
 
 This repository is for the persistent FLAMORIS AI Agent runtime and its agent-owned state.
 
-**Current status:** the repository is initialized for architecture and policy only. Do not describe runtime features as implemented until code and tests exist.
+**Current status:** a pre-repository Umeko/Ollama/PostgreSQL baseline has been imported for preservation. Treat it as migration input, not as proof that the current target runtime architecture is implemented or validated.
+
+## Imported baseline rules
+
+- Preserve the imported baseline until a migration decision explicitly replaces or removes it.
+- Do not silently rewrite imported historical/design records to match the new architecture.
+- New implementation work should distinguish between behavior being preserved, behavior being migrated, and obsolete behavior being retired.
+- The committed `.env.example` is documentation only. Never commit the real `.env` or credentials.
+- Historical direct Ollama/provider coupling does not override the current provider-neutral integration boundaries below.
 
 ## Core authority
 
