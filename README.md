@@ -2,13 +2,28 @@
 
 Persistent AI agent runtime for FLAMORIS.
 
-**Status: repository created; runtime implementation is not initialized yet.**
+**Status: the pre-repository AI Agent baseline has been imported for preservation. Modernization against the current architecture has not started yet.**
 
 Part of the [FLAMORIS AI](https://github.com/flamoris-jp/flamoris-ai) family.
 
 FLAMORIS AI Agent is intended to own long-lived agent-facing state and behavior: conversations, memory, knowledge access, prompts, tools, and orchestration toward intelligence and generation services.
 
 It is not the model runtime itself, not the media-generation engine, and not the owner of FLAMORIS product documents.
+
+## Imported baseline
+
+The initial source baseline was imported from the existing `flamoris_ai` working tree.
+
+It includes:
+
+- `agents/umeko` personality, FLAMORIS knowledge, character context, and Ollama Modelfiles;
+- `apps/umeko_chat` console chat/runtime code;
+- PostgreSQL schema, seed, and smoke-test SQL under `db`;
+- the 2026-08-16 design notes and earlier prototype history.
+
+The baseline is preserved intentionally so future phases can migrate from known working ideas instead of redesigning from memory. Existing assumptions such as direct Ollama access, machine-specific runtime identities, and the old DB shape are historical inputs, not automatically current architecture requirements.
+
+Secrets are not part of the baseline. The real `.env` remains untracked; only `.env.example` is committed.
 
 ## Intended scope
 
@@ -22,7 +37,7 @@ The Agent is planned to own:
 - persistent Agent-level orchestration across intelligence and generation services;
 - provenance needed to understand why an agent acted or answered as it did.
 
-The exact storage model, APIs, and runtime implementation are not defined by this initial repository setup.
+The repository now also contains the pre-repository Umeko/Ollama/PostgreSQL implementation as a baseline. That imported code documents what existed before the current repository architecture was defined; it must not be mistaken for the final target design.
 
 ## Ecosystem boundaries
 
