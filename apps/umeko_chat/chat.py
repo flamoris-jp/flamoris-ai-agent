@@ -3,10 +3,10 @@ from datetime import date, datetime
 from pathlib import Path
 from uuid import UUID
 
-import requests
 from dotenv import load_dotenv
 
 from db import (
+    close_instance,
     close_runtime,
     get_connection,
     get_previous_conversation,
@@ -14,7 +14,9 @@ from db import (
     save_message,
     start_conversation,
     start_instance,
+    validate_model_ref,
 )
+from intelligence import IntelligenceClient, IntelligenceError
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -23,8 +25,8 @@ load_dotenv(ROOT_DIR / ".env")
 AGENT_KEY = os.getenv("FLAMORIS_AGENT_KEY", "umeko")
 AGENT_DIR = ROOT_DIR / "agents" / AGENT_KEY
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat")
-MODEL = os.getenv("OLLAMA_MODEL", "umeko")
+INTELLIGENCE_BASE_URL = os.getenv("INTELLIGENCE_BASE_URL", "http://127.0.0.1:8081")
+INTELLIGENCE_MODEL = os.getenv("INTELLIGENCE_MODEL")
 MAX_CONTEXT_MESSAGES = int(os.getenv("UMEKO_CONTEXT_MESSAGES", "16"))
 PREVIOUS_MESSAGE_LIMIT = int(os.getenv("UMEKO_PREVIOUS_MESSAGES", "12"))
 LOAD_PREVIOUS = os.getenv(
@@ -136,7 +138,7 @@ def build_system_prompt(
 """
 
 
-def build_ollama_messages(
+def build_messages(
     system_prompt: str,
     history: list[dict],
 ) -> list[dict]:
@@ -153,12 +155,16 @@ def main():
     base_context = load_system_context()
     history: list[dict] = []
 
+    client = IntelligenceClient(INTELLIGENCE_BASE_URL, INTELLIGENCE_MODEL)
+    model = client.resolve_model()
+
     conn = get_connection()
     instance_id = None
     runtime = None
 
     try:
         refs = load_runtime_refs(conn)
+        validate_model_ref(conn, refs["model_id"], model)
 
         previous = None
 
@@ -237,36 +243,12 @@ def main():
             })
 
             try:
-                response = requests.post(
-                    OLLAMA_URL,
-                    json={
-                        "model": MODEL,
-                        "messages": build_ollama_messages(
-                            system_prompt,
-                            history,
-                        ),
-                        "think": True,
-                        "stream": False,
-                    },
-                    timeout=300,
+                assistant_text = client.chat(
+                    model,
+                    build_messages(system_prompt, history),
                 )
-
-                response.raise_for_status()
-
-                result = response.json()["message"]
-
-                thinking_text = result.get("thinking", "")
-                assistant_text = result["content"]
-
-                if thinking_text:
-                    print(f"梅（考え中）> {thinking_text}")
-
-            except requests.RequestException as exc:
-                print(f"梅> Ollamaとの通信でエラーが起きたよ: {exc}")
-                continue
-
-            except (KeyError, TypeError, ValueError) as exc:
-                print(f"梅> Ollamaの返答を読み取れなかったよ: {exc}")
+            except IntelligenceError as exc:
+                print(f"梅> モデルとの通信でエラーが起きたよ: {exc}")
                 continue
 
             history.append({
@@ -282,13 +264,13 @@ def main():
                 content=assistant_text,
                 origin_instance_id=instance_id,
                 metadata={
-                    "ollama_model": MODEL,
+                    "intelligence_model": model,
                 },
             )
 
             print(f"梅> {assistant_text}")
 
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print("\n梅> 今日はここまでにするね。")
 
     finally:
@@ -300,6 +282,8 @@ def main():
                     conversation_session_id=runtime["conversation_session_id"],
                     instance_id=instance_id,
                 )
+            elif instance_id is not None:
+                close_instance(conn, instance_id)
         finally:
             conn.close()
 

@@ -61,6 +61,19 @@ def load_runtime_refs(conn) -> dict[str, Any]:
     }
 
 
+def validate_model_ref(conn, model_id, served_model: str):
+    """Refuse to record a GPT-OSS response against a stale Ollama model row."""
+    row = conn.execute(
+        "SELECT provider, model_name FROM runtime.models WHERE id = %s",
+        (model_id,),
+    ).fetchone()
+    if row != ("llama.cpp", served_model):
+        raise RuntimeError(
+            "FLAMORIS_MODEL_KEY must select a llama.cpp model whose model_name "
+            f"matches /v1/models ({served_model!r}); run register_runtime.py first"
+        )
+
+
 def get_previous_conversation(conn, agent_id, project_id, message_limit: int = 12):
     conversation = conn.execute(
         '''
@@ -227,3 +240,11 @@ def close_runtime(conn, conversation_id, conversation_session_id, instance_id):
             "UPDATE runtime.instances SET ended_at = COALESCE(ended_at, now()) WHERE id = %s",
             (instance_id,),
         )
+
+
+def close_instance(conn, instance_id):
+    """Close a started instance if conversation creation failed."""
+    conn.execute(
+        "UPDATE runtime.instances SET ended_at = COALESCE(ended_at, now()) WHERE id = %s",
+        (instance_id,),
+    )
