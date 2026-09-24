@@ -2,7 +2,7 @@
 
 Persistent AI agent runtime for FLAMORIS.
 
-**Status: the pre-repository AI Agent baseline has been imported for preservation. Modernization against the current architecture has not started yet.**
+**Status: the imported Umeko baseline is preserved. Phase 0 adds an optional GPT-OSS/llama.cpp console path; live LIME/decopon acceptance is tracked separately.**
 
 Part of the [FLAMORIS AI](https://github.com/flamoris-jp/flamoris-ai) family.
 
@@ -22,6 +22,9 @@ It includes:
 - the 2026-08-16 design notes and earlier prototype history.
 
 The baseline is preserved intentionally so future phases can migrate from known working ideas instead of redesigning from memory. Existing assumptions such as direct Ollama access, machine-specific runtime identities, and the old DB shape are historical inputs, not automatically current architecture requirements.
+
+See [the migration phases](docs/PHASES.md) and [Phase 0 runbook](docs/PHASE_0_RUNBOOK.md)
+to register the currently served GPT-OSS model and run the Umeko console.
 
 Secrets are not part of the baseline. The real `.env` remains untracked; only `.env.example` is committed.
 
@@ -126,7 +129,7 @@ FLAMORIS software is provided as-is and does not include guaranteed individual s
 
 FLAMORIS AI Agentは、FLAMORISで長く動き続けるAI Agentのためのリポジトリです。
 
-**現在はリポジトリ作成済みで、runtime実装はまだ初期化していません。**
+**旧梅子の実装を保存済みです。Phase 0ではllama.cpp経由のGPT-OSS接続を追加し、LIME/decoponでの実機確認を別途行います。**
 
 将来的に、以下のAgent側の状態と振る舞いを担当します。
 
