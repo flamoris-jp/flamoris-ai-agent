@@ -464,7 +464,7 @@ FLAMORIS資料検索
 ```text
 Ollama導入                    ✅
 Qwen2.5 7B取得                ✅
-RTX 2060 Max-Q動作確認        ✅
+6GB級NVIDIA GPU動作確認       ✅
 梅子カスタムモデル作成        ✅
 日本語会話                    ✅
 愛乃認識                      ✅
