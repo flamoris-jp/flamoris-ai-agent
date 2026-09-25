@@ -2,7 +2,7 @@
 
 Persistent AI agent runtime for FLAMORIS.
 
-**Status: the imported Umeko baseline is preserved. Phase 0 adds an optional GPT-OSS/llama.cpp console path; live LIME/decopon acceptance is tracked separately.**
+**Status: the imported Umeko baseline is preserved. Phase 0 adds an optional GPT-OSS/llama.cpp console path; live deployment-environment acceptance is tracked separately.**
 
 Part of the [FLAMORIS AI](https://github.com/flamoris-jp/flamoris-ai) family.
 
@@ -129,7 +129,7 @@ FLAMORIS software is provided as-is and does not include guaranteed individual s
 
 FLAMORIS AI Agentは、FLAMORISで長く動き続けるAI Agentのためのリポジトリです。
 
-**旧梅子の実装を保存済みです。Phase 0ではllama.cpp経由のGPT-OSS接続を追加し、LIME/decoponでの実機確認を別途行います。**
+**旧梅子の実装を保存済みです。Phase 0ではllama.cpp経由のGPT-OSS接続を追加し、実際のdeployment環境での確認を別途行います。**
 
 将来的に、以下のAgent側の状態と振る舞いを担当します。
 
