@@ -1,7 +1,7 @@
 # 梅子（Umeko）ローカルAI構築手順書
 
 作成日: 2026-08-16  
-対象環境: Windows / Mango / NVIDIA GeForce RTX 2060 Max-Q 6GB  
+対象環境: Windows / local host / NVIDIA GPU  
 作業フォルダ: `C:\FLAMORIS\ai\umeko`
 
 ---
@@ -93,7 +93,7 @@ CONTEXT    4096
 共有GPUメモリ: 約1.0GB
 ```
 
-7Bモデルは完全GPU常駐ではないものの、RTX 2060 Max-Q 6GBで十分実用的に動作した。
+7Bモデルは完全GPU常駐ではないものの、6GB級のNVIDIA GPUで実用的に動作した。
 
 ---
 
