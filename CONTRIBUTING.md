@@ -6,7 +6,7 @@ This repository is intended to become the persistent Agent runtime for FLAMORIS.
 
 ## Before contributing
 
-Small documentation fixes may go directly to a pull request.
+Issues are welcome from everyone. Pull requests are accepted only from repository collaborators. Please open an Issue to propose documentation fixes or implementation changes.
 
 Please open an Issue first for substantial changes involving:
 
@@ -51,6 +51,8 @@ Use repository documentation, Issues, tests, logs, and source code as primary re
 # FLAMORIS AI Agent へのコントリビューション
 
 FLAMORISに興味を持っていただきありがとうございます。
+
+Issueはどなたでも歓迎します。Pull Requestはリポジトリのcollaboratorのみ受け付けています。修正、機能、ドキュメント変更などの提案はIssueからお願いします。
 
 このリポジトリは、FLAMORISの永続的なAI Agent runtimeを担当する予定です。変更はAgent自身が持つ状態と振る舞いに絞ってください。
 
