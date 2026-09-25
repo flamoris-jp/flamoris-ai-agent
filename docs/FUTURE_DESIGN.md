@@ -67,7 +67,7 @@ Host
 例:
 
 ```text
-Mango
+Local Host
 └─ Umeko Chat
    ├─ instance A
    └─ instance B
@@ -81,8 +81,8 @@ Mango
 `runtime.hosts.parent_host_id` を使えば、
 
 ```text
-Mango
-└─ Apricot VM
+Local Host
+└─ Child VM
 ```
 
 のようなHost階層も表現できる。
