@@ -1,5 +1,5 @@
 -- ============================================================================
--- FLAMORIS AI v0.1 seed: Akino + Umeko + Mango
+-- FLAMORIS AI v0.1 seed: Akino + Umeko + local host
 -- Run while connected to flamoris_ai as PostgreSQL superuser.
 -- ============================================================================
 
@@ -99,12 +99,12 @@ ON CONFLICT (agent_id, project_id) DO UPDATE
 SET project_role = EXCLUDED.project_role,
     inherit_parent = EXCLUDED.inherit_parent;
 
--- Host: Mango
+-- Host: local machine
 INSERT INTO runtime.hosts (
     host_key, hostname, display_name, host_type, os_name
 )
 VALUES (
-    'mango', 'Mango', 'Mango', 'machine', 'Windows'
+    'local-host', 'localhost', 'Local Host', 'machine', 'Windows'
 )
 ON CONFLICT (host_key) DO UPDATE
 SET hostname = EXCLUDED.hostname,
