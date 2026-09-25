@@ -29,7 +29,7 @@ Job / Tool実行履歴
 ```text
 愛乃
 ↓
-Mango / Umeko Chat instance
+Local Host / Umeko Chat instance
 ↓
 梅子
 ↓
@@ -169,12 +169,12 @@ Instance
 今回:
 
 ```text
-Host        Mango
+Host        Local Host
 Application Umeko Chat
 Instance    chat.pyを起動するたびに新規UUID
 ```
 
-同じMango上で梅子を10回起動したら、
+同じLocal Host上で梅子を10回起動したら、
 `runtime.instances` は10件残る。
 
 各messageには `origin_instance_id` が入る。
@@ -183,7 +183,7 @@ Instance    chat.pyを起動するたびに新規UUID
 
 ```text
 この発言は
-Mangoの
+Local Hostの
 Umeko Chatの
 どの起動個体が処理したか
 ```
@@ -220,7 +220,7 @@ FLAMORIS専用モデル
 
 ---
 
-# 6. DecoponでPostgreSQLへ入る
+# 6. PostgreSQL hostへ入る
 
 ## Dockerの場合
 
@@ -337,7 +337,7 @@ db/01_schema.sql
 
 方法A: DBeaverから `flamoris_ai` DBへ管理者接続してSQLスクリプトを実行。
 
-方法B: SQLファイルをDecoponへ置き、psqlから:
+方法B: SQLファイルをPostgreSQL hostへ置き、psqlから:
 
 ```bash
 psql -U postgres -d flamoris_ai -f 01_schema.sql
@@ -387,7 +387,7 @@ Projects
      └─ 梅子
 
 Host
-  mango
+  local-host
 
 Application
   umeko-chat
@@ -409,14 +409,14 @@ Model
 schema version 0.1
 FLAMORIS / AI / 梅子
 umeko / 梅子
-mango
+local-host
 umeko-chat
 ollama:umeko
 ```
 
 ---
 
-# 13. Mangoへ配置
+# 13. Local Hostへ配置
 
 最終配置:
 
@@ -491,7 +491,7 @@ PGPASSWORD=実際のパスワード
 FLAMORIS_HUMAN_KEY=akino
 FLAMORIS_AGENT_KEY=umeko
 FLAMORIS_PROJECT_KEY=flamoris.ai.umeko
-FLAMORIS_HOST_KEY=mango
+FLAMORIS_HOST_KEY=local-host
 FLAMORIS_APPLICATION_KEY=umeko-chat
 FLAMORIS_MODEL_KEY=ollama:umeko
 ```
@@ -513,7 +513,7 @@ FLAMORIS AI DB接続 OK
 schema version : 0.1
 project        : flamoris.ai.umeko / FLAMORIS / AI / 梅子
 agent          : umeko / 梅子
-host           : mango / Mango
+host           : local-host / Local Host
 application    : umeko-chat / Umeko Chat
 model          : ollama:umeko / ollama:umeko (qwen2.5:7b)
 ```
@@ -623,7 +623,7 @@ ORDER BY m.ordinal DESC
 LIMIT 100;
 ```
 
-ここで「どのMango / どのAP instanceか」まで見える。
+ここで「どのLocal Host / どのAP instanceか」まで見える。
 
 ---
 
