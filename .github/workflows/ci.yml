@@ -33,3 +33,26 @@ jobs:
           "$RUNNER_TEMP/agent-wheel/bin/python" -m pip install dist/*.whl
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/agent-wheel/bin/python" "$GITHUB_WORKSPACE/tests/wheel_smoke.py"
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t flamoris-agent-ci .
+      - name: Read-only non-root image smoke (no live services)
+        run: |
+          export AGENT_MCP_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+          docker run -d --name agent-ci --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m \
+            --cap-drop ALL --security-opt no-new-privileges:true \
+            --memory 512m --pids-limit 128 -e AGENT_MCP_TOKEN flamoris-agent-ci
+          trap 'docker rm -f agent-ci >/dev/null' EXIT
+          for attempt in $(seq 1 20); do
+            if docker exec agent-ci python -m flamoris_ai_agent.healthcheck; then break; fi
+            sleep 1
+          done
+          docker exec agent-ci python -m flamoris_ai_agent.healthcheck
+          docker exec -i agent-ci python < tests/wheel_smoke.py
+          docker exec -i agent-ci python < tests/container_smoke.py
+          docker stop --time 45 agent-ci >/dev/null
+          test "$(docker inspect -f '{{.State.ExitCode}}' agent-ci)" = 0
