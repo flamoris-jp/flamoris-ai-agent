@@ -138,12 +138,16 @@ class UmekoSessionTests(unittest.TestCase):
         validate.assert_called_once_with(unittest.mock.ANY, "model-row", "actual-served-id")
         get_previous.assert_called_once()
         self.assertEqual(get_previous.call_args.kwargs["agent_id"], "same-agent")
-        self.assertIn("前回の話", start.call_args.kwargs["system_prompt"])
+        self.assertNotIn("前回の話", start.call_args.kwargs["system_prompt"])
+        self.assertIn("前回の話", client.chat.call_args.args[1][1]["content"])
+        self.assertEqual(
+            start.call_args.kwargs["system_context"]["previous_conversation"], previous
+        )
         self.assertEqual([c.kwargs["role"] for c in save.call_args_list], ["user", "assistant"])
         self.assertEqual(
             save.call_args_list[1].kwargs["metadata"], {"intelligence_model": "actual-served-id"}
         )
-        self.assertEqual(client.chat.call_args.args[1][1]["content"], "こんにちは")
+        self.assertEqual(client.chat.call_args.args[1][-1]["content"], "こんにちは")
         close.assert_called_once_with(
             unittest.mock.ANY,
             conversation_id="new-conversation",
