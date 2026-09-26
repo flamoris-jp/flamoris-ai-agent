@@ -1,0 +1,14 @@
+**
+!Dockerfile
+!docker-requirements.txt
+!pyproject.toml
+!README.md
+!LICENSE
+!src/
+!src/**
+!agents/
+!agents/**
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*

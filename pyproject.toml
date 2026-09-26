@@ -9,7 +9,7 @@ description = "Persistent FLAMORIS Agent runtime"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
-dependencies = ["httpx>=0.28,<1", "psycopg[binary]>=3.2,<4", "python-dotenv>=1,<2", "mcp>=2.2,<3", "pydantic>=2.11,<3"]
+dependencies = ["httpx>=0.28,<1", "psycopg[binary]>=3.2,<4", "python-dotenv>=1,<2", "mcp>=2.2,<3", "pydantic>=2.11,<3", "starlette>=1.7,<2", "uvicorn>=0.54,<1"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.14,<1", "build>=1.2,<2"]
@@ -27,7 +27,7 @@ packages = ["src/flamoris_ai_agent"]
 "agents" = "flamoris_ai_agent/agents"
 
 [tool.hatch.build.targets.sdist]
-include = ["src", "agents", "db", "tests", "docs", "history", "*.md", "LICENSE", "pyproject.toml", "requirements.txt", ".env.example"]
+include = ["src", "agents", "db", "tests", "docs", "history", "*.md", "LICENSE", "pyproject.toml", "requirements.txt", ".env.example", "Dockerfile", ".dockerignore", "compose.yaml", "docker-requirements.txt"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
