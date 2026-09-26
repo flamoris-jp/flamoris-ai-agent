@@ -87,7 +87,7 @@ Replace the current Ollama-specific request path with a small intelligence clien
 Recommended shape:
 
 ```text
-apps/umeko_chat
+src/flamoris_ai_agent
       │
       ▼
 IntelligenceClient
@@ -256,3 +256,4 @@ The first question for every migration should be:
 > Does this belong to the Agent, or was it only an implementation detail of the old model runtime?
 
 If it belongs to the Agent and still works, preserve it until evidence shows a reason to change it.
+

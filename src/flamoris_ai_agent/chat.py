@@ -1,11 +1,9 @@
 import os
 from datetime import date, datetime
-from pathlib import Path
 from uuid import UUID
 
-from dotenv import load_dotenv
-
-from db import (
+from flamoris_ai_agent.config import load_agent_text
+from flamoris_ai_agent.db import (
     close_instance,
     close_runtime,
     get_connection,
@@ -16,14 +14,7 @@ from db import (
     start_instance,
     validate_model_ref,
 )
-from intelligence import IntelligenceClient, IntelligenceError
-
-
-ROOT_DIR = Path(__file__).resolve().parents[2]
-load_dotenv(ROOT_DIR / ".env")
-
-AGENT_KEY = os.getenv("FLAMORIS_AGENT_KEY", "umeko")
-AGENT_DIR = ROOT_DIR / "agents" / AGENT_KEY
+from flamoris_ai_agent.intelligence import IntelligenceClient, IntelligenceError
 
 INTELLIGENCE_BASE_URL = os.getenv("INTELLIGENCE_BASE_URL", "http://127.0.0.1:8081")
 INTELLIGENCE_MODEL = os.getenv("INTELLIGENCE_MODEL")
@@ -44,27 +35,16 @@ def json_safe(value):
         return value.isoformat()
 
     if isinstance(value, dict):
-        return {
-            key: json_safe(item)
-            for key, item in value.items()
-        }
+        return {key: json_safe(item) for key, item in value.items()}
 
     if isinstance(value, (list, tuple)):
-        return [
-            json_safe(item)
-            for item in value
-        ]
+        return [json_safe(item) for item in value]
 
     return value
 
 
 def load_text(filename: str) -> str:
-    path = AGENT_DIR / filename
-
-    if not path.exists():
-        raise FileNotFoundError(f"設定ファイルが見つかりません: {path}")
-
-    return path.read_text(encoding="utf-8")
+    return load_agent_text(filename)
 
 
 def load_system_context() -> dict[str, str]:
@@ -85,9 +65,7 @@ def format_previous_conversation(previous) -> str:
     ]
 
     for message in previous["messages"]:
-        lines.append(
-            f"{message['sender']}: {message['content']}"
-        )
+        lines.append(f"{message['sender']}: {message['content']}")
 
     return "\n".join(lines)
 
@@ -181,10 +159,12 @@ def main():
         # system_context is stored in PostgreSQL JSONB.
         # UUID/datetime values from the previous conversation must be
         # converted before Psycopg's JSON serializer receives them.
-        system_context = json_safe({
-            **base_context,
-            "previous_conversation": previous,
-        })
+        system_context = json_safe(
+            {
+                **base_context,
+                "previous_conversation": previous,
+            }
+        )
 
         system_prompt = build_system_prompt(
             base_context,
@@ -237,10 +217,12 @@ def main():
                 origin_instance_id=instance_id,
             )
 
-            history.append({
-                "role": "user",
-                "content": user_text,
-            })
+            history.append(
+                {
+                    "role": "user",
+                    "content": user_text,
+                }
+            )
 
             try:
                 assistant_text = client.chat(
@@ -251,10 +233,12 @@ def main():
                 print(f"梅> モデルとの通信でエラーが起きたよ: {exc}")
                 continue
 
-            history.append({
-                "role": "assistant",
-                "content": assistant_text,
-            })
+            history.append(
+                {
+                    "role": "assistant",
+                    "content": assistant_text,
+                }
+            )
 
             save_message(
                 conn,

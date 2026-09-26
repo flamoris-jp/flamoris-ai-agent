@@ -1,3 +1,2 @@
-requests
-psycopg[binary]
-python-dotenv
+# Compatibility installer; pyproject.toml owns dependency ranges.
+.
