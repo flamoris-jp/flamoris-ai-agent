@@ -13,4 +13,5 @@ assert register_runtime.main and verify_db.main
 entries = {e.name: e for e in distribution("flamoris-ai-agent").entry_points}
 for name in ("flamoris-agent-chat", "flamoris-agent-register-runtime", "flamoris-agent-verify-db"):
     assert callable(entries[name].load())
+assert callable(entries["flamoris-agent-mcp"].load())
 print("Installed package, entry points, and personality resources: OK")

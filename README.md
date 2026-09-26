@@ -57,6 +57,24 @@ substituting the bundled Umeko. Unrelated working-directory `.env` files are nev
 
 ## Intended scope
 
+## Agent MCP (single principal)
+
+Run `flamoris-agent-mcp` for stdio MCP, using the same environment/runtime
+identities as the console. Local tools are `health` and `ask`; Hub may later
+prefix them with `agent.`. No Hub configuration or runtime activation is automatic.
+See [MCP_CONTRACT.md](docs/MCP_CONTRACT.md) for the exact scope and lifecycle.
+
+`ask` accepts a `request` object with a UUID `request_id`, `text`, and optional
+`previous_conversation_id`. Each request creates/closes a new conversation.
+Continuations explicitly reference a closed MCP conversation belonging to the
+configured human/Agent/project. Console histories are not remotely exposed.
+Use one process/worker. Reusing an admitted request ID returns `duplicate_request`
+even after restart; never retry an uncertain operation with a fresh ID automatically.
+
+This is not a multi-user endpoint. stdio inherits the trusted launcher's identity.
+No tools, Memory CRUD, GPU control or automatic Intelligence MCP migration is included.
+The `health` result distinguishes process liveness from untested dependencies.
+
 The console uses the shared Agent execution boundary described in
 [EXECUTION_CONTRACT.md](docs/EXECUTION_CONTRACT.md). Input/output are bounded;
 inference errors are fixed codes and never expose provider bodies or credentials.

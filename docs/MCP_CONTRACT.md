@@ -62,7 +62,9 @@ oversized context instead of silently truncating meaning.
 
 Fixed error codes omit credentials, topology and prompts. No model-generated
 tools/SQL/paths/URLs, remote fallback, memory CRUD or GPU management. Limits from
-EXECUTION_CONTRACT.md apply; MCP messages are bounded to 128 KiB. stdio stdout
-is protocol-only. Operator-supplied personality files are trusted policy.
+EXECUTION_CONTRACT.md apply; HTTP bodies in #13 are bounded to 128 KiB.
+The SDK stdio decoder trusts the local launcher to bound transport frames; tool
+input/context limits still apply after decoding. stdio stdout is protocol-only.
+Operator-supplied personality files are trusted policy.
 
 Offline protocol/DB fakes are not real PostgreSQL/GPT-OSS acceptance. Keep #2 open.
