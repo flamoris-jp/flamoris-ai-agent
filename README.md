@@ -2,7 +2,7 @@
 
 Persistent AI agent runtime for FLAMORIS.
 
-**Status: the imported Umeko baseline is preserved. Phase 0 adds an optional GPT-OSS/llama.cpp console path; live deployment-environment acceptance is tracked separately.**
+**Status: the imported Umeko baseline is preserved, the packaged console and bounded Agent MCP surface are implemented, and Phase 0 includes an optional GPT-OSS/llama.cpp path. Live deployment-environment acceptance is tracked separately.**
 
 Part of the [FLAMORIS AI](https://github.com/flamoris-jp/flamoris-ai) family.
 
@@ -84,15 +84,18 @@ The console uses the shared Agent execution boundary described in
 inference errors are fixed codes and never expose provider bodies or credentials.
 Live acceptance in #2 remains outstanding; offline tests are not deployment evidence.
 
-The Agent is planned to own:
+The current packaged runtime already owns the Agent-side conversation/session boundary used by the console and Agent MCP, along with its configured identity/personality/prompt context and PostgreSQL-backed Agent state.
 
-- conversations and agent sessions;
-- persistent memory and memory lifecycle;
+Future phases may expand or normalize:
+
+- persistent memory and its lifecycle;
 - knowledge references and retrieval context;
-- prompts and agent policies;
+- broader prompt and Agent-policy management;
 - tool registration, capability checks, and tool invocation;
 - persistent Agent-level orchestration across intelligence and generation services;
-- provenance needed to understand why an agent acted or answered as it did.
+- richer provenance needed to understand why an agent acted or answered as it did.
+
+Those future capabilities remain Agent-owned design areas; this status does not claim that Memory CRUD, general tools, or durable cross-service orchestration are implemented today.
 
 The repository now also contains the pre-repository Umeko/Ollama/PostgreSQL implementation as a baseline. That imported code documents what existed before the current repository architecture was defined; it must not be mistaken for the final target design.
 
@@ -115,7 +118,7 @@ These are boundaries, not mandatory layers.
 
 ### FLAMORIS Intelligence MCP
 
-[flamoris-intelligence-mcp](https://github.com/flamoris-jp/flamoris-intelligence-mcp) is the planned MCP-native, provider-neutral gateway for language, reasoning, coding, and related intelligence capabilities.
+[flamoris-intelligence-mcp](https://github.com/flamoris-jp/flamoris-intelligence-mcp) is the implemented MCP-native, provider-neutral gateway for bounded language, reasoning, coding, and related intelligence capabilities. Its Phase 1 runtime is mock/CI validated; live deployment acceptance remains a separate check.
 
 The Agent may use it, but should not absorb model/provider runtime ownership. If Intelligence MCP performs bounded task coordination or multi-agent execution inside an intelligence request, the Agent still remains the authority for persistent Agent identity, conversation, memory, and long-lived workflow context.
 
@@ -183,17 +186,20 @@ FLAMORIS software is provided as-is and does not include guaranteed individual s
 
 FLAMORIS AI Agentは、FLAMORISで長く動き続けるAI Agentのためのリポジトリです。
 
-**旧梅子の実装を保存済みです。Phase 0ではllama.cpp経由のGPT-OSS接続を追加し、実際のdeployment環境での確認を別途行います。**
+**旧梅子の実装を保存しつつ、packaged consoleとbounded Agent MCP surfaceまで実装済みです。Phase 0にはllama.cpp経由のGPT-OSS経路も含まれ、実際のdeployment環境でのacceptanceは別途確認します。**
 
-将来的に、以下のAgent側の状態と振る舞いを担当します。
+現在のpackaged runtimeは、consoleとAgent MCPが使うConversation / Session境界、設定されたidentity / personality / prompt context、PostgreSQL上のAgent側状態をすでに担当しています。
 
-- Conversation / Session
+今後の拡張・整理対象は:
+
 - Memoryとそのlifecycle
 - Knowledge参照・検索context
-- Prompt / Agent policy
+- より広いPrompt / Agent policy管理
 - Tool登録、capability確認、tool実行
-- Intelligence MCP / Generation MCPへのorchestration
-- Agentの判断や操作を追跡するためのprovenance
+- Intelligence MCP / Generation MCPへの永続的なorchestration
+- Agentの判断や操作を追跡するための、より豊かなprovenance
+
+これらはAgent側の責務として設計しますが、Memory CRUD、汎用Tool、永続的なcross-service orchestrationまで現時点で実装済みという意味ではありません。
 
 ### 境界
 
