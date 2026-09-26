@@ -57,6 +57,11 @@ substituting the bundled Umeko. Unrelated working-directory `.env` files are nev
 
 ## Intended scope
 
+The console uses the shared Agent execution boundary described in
+[EXECUTION_CONTRACT.md](docs/EXECUTION_CONTRACT.md). Input/output are bounded;
+inference errors are fixed codes and never expose provider bodies or credentials.
+Live acceptance in #2 remains outstanding; offline tests are not deployment evidence.
+
 The Agent is planned to own:
 
 - conversations and agent sessions;
@@ -193,4 +198,3 @@ filesystem、network、制作アプリ編集、credentialを伴う操作には�
 このリポジトリのコードとドキュメントは、明記がない限りApache License 2.0です。
 
 AI model、model weights、dataset、Knowledge source、生成物、第三者由来のprompt、provider側assetなどには別のライセンスや利用条件が適用される場合があります。それぞれ確認してください。
-
