@@ -7,8 +7,8 @@ another model because old runtime.instances refer to that identity.
 import os
 import platform
 
-from db import _required_env, get_connection
-from intelligence import IntelligenceClient
+from flamoris_ai_agent.db import _required_env, get_connection
+from flamoris_ai_agent.intelligence import IntelligenceClient
 
 
 def register(conn, *, host_key: str, model_key: str, served_model: str):

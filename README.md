@@ -16,8 +16,8 @@ The initial source baseline was imported from the existing `flamoris_ai` working
 
 It includes:
 
-- `agents/umeko` personality, FLAMORIS knowledge, character context, and Ollama Modelfiles;
-- `apps/umeko_chat` console chat/runtime code;
+- `agents/umeko` personality, FLAMORIS knowledge, and character context;
+- `src/flamoris_ai_agent` active console chat/runtime package;
 - PostgreSQL schema, seed, and smoke-test SQL under `db`;
 - the 2026-08-16 design notes and earlier prototype history.
 
@@ -27,6 +27,33 @@ See [the migration phases](docs/PHASES.md) and [Phase 0 runbook](docs/PHASE_0_RU
 to register the currently served GPT-OSS model and run the Umeko console.
 
 Secrets are not part of the baseline. The real `.env` remains untracked; only `.env.example` is committed.
+
+## Development and layout
+
+Install with `python -m pip install -e '.[dev]'`, then run `ruff check .`,
+`ruff format --check .`, `pytest`, and `python -m build`.
+Tests use fake providers and DB connections; no GPU or private credentials are needed.
+
+| Path | Responsibility |
+|---|---|
+| `src/flamoris_ai_agent/` | Active runtime and packaged entry points |
+| `agents/umeko/` | Active local personality/context, included in the wheel |
+| `db/` | Existing PostgreSQL schema and seed, unchanged by packaging |
+| `tests/` | Offline tests and installed-wheel smoke check |
+| `docs/` | Current migration/runbook and forward design |
+| `history/` | Imported records, prototypes, patches, and retired Ollama definitions |
+
+Use `flamoris-agent-chat`, `flamoris-agent-register-runtime`, and
+`flamoris-agent-verify-db` after installation. The former `apps/umeko_chat/*.py`
+script paths have moved to the package. `python -m flamoris_ai_agent.chat`
+is also supported. See [the history inventory](history/README.md) for moved records.
+
+Source/editable installs keep using the repository-root `.env` and `agents/`.
+Wheel installs use bundled context and process environment by default. For an
+editable deployment context, set **an absolute** `FLAMORIS_AGENT_HOME` before
+launch, containing `.env` and `agents/<agent-key>/{personality,flamoris,characters}.md`.
+An explicit home is authoritative; missing identity files fail rather than silently
+substituting the bundled Umeko. Unrelated working-directory `.env` files are never loaded.
 
 ## Intended scope
 
@@ -166,3 +193,4 @@ filesystem、network、制作アプリ編集、credentialを伴う操作には�
 このリポジトリのコードとドキュメントは、明記がない限りApache License 2.0です。
 
 AI model、model weights、dataset、Knowledge source、生成物、第三者由来のprompt、provider側assetなどには別のライセンスや利用条件が適用される場合があります。それぞれ確認してください。
+

@@ -1,4 +1,4 @@
-from db import get_connection, load_runtime_refs
+from flamoris_ai_agent.db import get_connection, load_runtime_refs
 
 
 def main():

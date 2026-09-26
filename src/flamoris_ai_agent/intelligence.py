@@ -18,8 +18,10 @@ class IntelligenceClient:
     def _request(self, method: str, path: str, **kwargs):
         try:
             response = requests.request(
-                method, f"{self.base_url}{path}",
-                timeout=10 if method == "GET" else self.timeout, **kwargs
+                method,
+                f"{self.base_url}{path}",
+                timeout=10 if method == "GET" else self.timeout,
+                **kwargs,
             )
             response.raise_for_status()
             return response.json()

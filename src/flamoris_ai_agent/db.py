@@ -1,22 +1,20 @@
 import os
 import platform
 import sys
-from pathlib import Path
 from typing import Any
 
 import psycopg
-from dotenv import load_dotenv
 from psycopg.types.json import Jsonb
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-load_dotenv(ROOT_DIR / ".env")
+from flamoris_ai_agent.config import AGENT_HOME
 
 
 def _required_env(name: str) -> str:
     value = os.getenv(name)
     if not value:
         raise RuntimeError(
-            f"環境変数 {name} がありません。{ROOT_DIR / '.env'} を確認してください。"
+            f"環境変数 {name} がありません。"
+            f"環境設定または {AGENT_HOME} の .env を確認してください。"
         )
     return value
 
@@ -52,12 +50,30 @@ def load_runtime_refs(conn) -> dict[str, Any]:
     model_key = _required_env("FLAMORIS_MODEL_KEY")
 
     return {
-        "human_id": _lookup_one(conn, "SELECT id FROM core.humans WHERE human_key = %s AND enabled", human_key, "Human"),
-        "agent_id": _lookup_one(conn, "SELECT id FROM core.agents WHERE agent_key = %s AND enabled", agent_key, "Agent"),
-        "project_id": _lookup_one(conn, "SELECT id FROM core.projects WHERE project_key = %s", project_key, "Project"),
-        "host_id": _lookup_one(conn, "SELECT id FROM runtime.hosts WHERE host_key = %s AND enabled", host_key, "Host"),
-        "application_id": _lookup_one(conn, "SELECT id FROM runtime.applications WHERE application_key = %s AND enabled", application_key, "Application"),
-        "model_id": _lookup_one(conn, "SELECT id FROM runtime.models WHERE model_key = %s AND enabled", model_key, "Model"),
+        "human_id": _lookup_one(
+            conn, "SELECT id FROM core.humans WHERE human_key = %s AND enabled", human_key, "Human"
+        ),
+        "agent_id": _lookup_one(
+            conn, "SELECT id FROM core.agents WHERE agent_key = %s AND enabled", agent_key, "Agent"
+        ),
+        "project_id": _lookup_one(
+            conn, "SELECT id FROM core.projects WHERE project_key = %s", project_key, "Project"
+        ),
+        "host_id": _lookup_one(
+            conn, "SELECT id FROM runtime.hosts WHERE host_key = %s AND enabled", host_key, "Host"
+        ),
+        "application_id": _lookup_one(
+            conn,
+            "SELECT id FROM runtime.applications WHERE application_key = %s AND enabled",
+            application_key,
+            "Application",
+        ),
+        "model_id": _lookup_one(
+            conn,
+            "SELECT id FROM runtime.models WHERE model_key = %s AND enabled",
+            model_key,
+            "Model",
+        ),
     }
 
 
@@ -76,14 +92,14 @@ def validate_model_ref(conn, model_id, served_model: str):
 
 def get_previous_conversation(conn, agent_id, project_id, message_limit: int = 12):
     conversation = conn.execute(
-        '''
+        """
         SELECT c.id, c.created_at, c.ended_at
         FROM chat.conversations AS c
         WHERE c.primary_agent_id = %s
           AND c.project_id = %s
         ORDER BY c.created_at DESC
         LIMIT 1
-        ''',
+        """,
         (agent_id, project_id),
     ).fetchone()
 
@@ -91,7 +107,7 @@ def get_previous_conversation(conn, agent_id, project_id, message_limit: int = 1
         return None
 
     rows = conn.execute(
-        '''
+        """
         SELECT
             m.role,
             COALESCE(p.display_name, m.role) AS sender,
@@ -103,7 +119,7 @@ def get_previous_conversation(conn, agent_id, project_id, message_limit: int = 1
         WHERE m.conversation_id = %s
         ORDER BY m.ordinal DESC
         LIMIT %s
-        ''',
+        """,
         (conversation[0], message_limit),
     ).fetchall()
 
@@ -113,8 +129,7 @@ def get_previous_conversation(conn, agent_id, project_id, message_limit: int = 1
         "created_at": conversation[1],
         "ended_at": conversation[2],
         "messages": [
-            {"role": r[0], "sender": r[1], "content": r[2], "created_at": r[3]}
-            for r in rows
+            {"role": r[0], "sender": r[1], "content": r[2], "created_at": r[3]} for r in rows
         ],
     }
 
@@ -126,14 +141,14 @@ def start_instance(conn, refs: dict[str, Any]):
         "executable": sys.executable,
     }
     return conn.execute(
-        '''
+        """
         INSERT INTO runtime.instances (
             host_id, application_id, agent_id, model_id,
             instance_label, process_id, metadata
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         RETURNING id
-        ''',
+        """,
         (
             refs["host_id"],
             refs["application_id"],
@@ -149,13 +164,13 @@ def start_instance(conn, refs: dict[str, Any]):
 def start_conversation(conn, refs, instance_id, system_prompt, system_context):
     with conn.transaction():
         conversation_id = conn.execute(
-            '''
+            """
             INSERT INTO chat.conversations (
                 project_id, primary_agent_id, system_prompt, system_context, metadata
             )
             VALUES (%s, %s, %s, %s, %s)
             RETURNING id
-            ''',
+            """,
             (
                 refs["project_id"],
                 refs["agent_id"],
@@ -166,29 +181,29 @@ def start_conversation(conn, refs, instance_id, system_prompt, system_context):
         ).fetchone()[0]
 
         human_participant_id = conn.execute(
-            '''
+            """
             INSERT INTO chat.participants (conversation_id, human_id, display_name)
             SELECT %s, id, display_name FROM core.humans WHERE id = %s
             RETURNING id
-            ''',
+            """,
             (conversation_id, refs["human_id"]),
         ).fetchone()[0]
 
         agent_participant_id = conn.execute(
-            '''
+            """
             INSERT INTO chat.participants (conversation_id, agent_id, display_name)
             SELECT %s, id, display_name FROM core.agents WHERE id = %s
             RETURNING id
-            ''',
+            """,
             (conversation_id, refs["agent_id"]),
         ).fetchone()[0]
 
         conversation_session_id = conn.execute(
-            '''
+            """
             INSERT INTO chat.conversation_sessions (conversation_id, instance_id)
             VALUES (%s, %s)
             RETURNING id
-            ''',
+            """,
             (conversation_id, instance_id),
         ).fetchone()[0]
 
@@ -200,16 +215,18 @@ def start_conversation(conn, refs, instance_id, system_prompt, system_context):
     }
 
 
-def save_message(conn, conversation_id, sender_participant_id, role, content, origin_instance_id, metadata=None):
+def save_message(
+    conn, conversation_id, sender_participant_id, role, content, origin_instance_id, metadata=None
+):
     return conn.execute(
-        '''
+        """
         INSERT INTO chat.messages (
             conversation_id, sender_participant_id, role,
             content, origin_instance_id, metadata
         )
         VALUES (%s, %s, %s, %s, %s, %s)
         RETURNING id, ordinal
-        ''',
+        """,
         (
             conversation_id,
             sender_participant_id,
@@ -224,16 +241,17 @@ def save_message(conn, conversation_id, sender_participant_id, role, content, or
 def close_runtime(conn, conversation_id, conversation_session_id, instance_id):
     with conn.transaction():
         conn.execute(
-            "UPDATE chat.conversation_sessions SET left_at = COALESCE(left_at, now()) WHERE id = %s",
+            "UPDATE chat.conversation_sessions "
+            "SET left_at = COALESCE(left_at, now()) WHERE id = %s",
             (conversation_session_id,),
         )
         conn.execute(
-            '''
+            """
             UPDATE chat.conversations
             SET ended_at = COALESCE(ended_at, now()),
                 status = CASE WHEN status = 'open' THEN 'closed' ELSE status END
             WHERE id = %s
-            ''',
+            """,
             (conversation_id,),
         )
         conn.execute(

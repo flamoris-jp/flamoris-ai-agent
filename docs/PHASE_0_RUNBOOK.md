@@ -13,18 +13,18 @@ The model and host are separate runtime identities.
    Confirm `curl http://127.0.0.1:8081/health` and
    `curl http://127.0.0.1:8081/v1/models`. Copy the exact `data[].id` reported
    by the server; the filename or friendly name may differ.
-3. From the repository root, install `requirements.txt` in a Python virtual
+3. From the repository root, run `python -m pip install -e .` in a Python virtual
    environment. Copy `.env.example` to `.env` and set your PostgreSQL
    connection, `FLAMORIS_HOST_KEY=local-host`, and a fresh
    `FLAMORIS_MODEL_KEY=llama.cpp:gpt-oss-20b`. Keep `.env` untracked.
    If the endpoint lists multiple models, set `INTELLIGENCE_MODEL` to the exact
    served ID. An existing model key must never be reused for a different ID.
-4. Run `python apps/umeko_chat/register_runtime.py`. This explicitly adds the
+4. Run `flamoris-agent-register-runtime`. This explicitly adds the
    runtime host and the currently served model to the existing runtime tables.
    It refuses to repoint an existing host/model key. The old Ollama model row
    and existing runtime instances stay unchanged.
-5. Run `python apps/umeko_chat/verify_db.py`, then
-   `python apps/umeko_chat/chat.py`. Ask 梅子 a question and exit with `/bye`.
+5. Run `flamoris-agent-verify-db`, then
+   `flamoris-agent-chat`. Ask 梅子 a question and exit with `/bye`.
 
 If the runtime manager switches GPU ownership, start the `llm` profile first.
 This app never launches or stops the model server itself.
@@ -34,11 +34,11 @@ This app never launches or stops the model server itself.
 After the first chat, check the new conversation and message rows in the
 existing `chat` tables and the matching `runtime.instances` record. The
 instance should reference the same Umeko agent ID as older instances and
-the new llama.cpp model ID. Restart `chat.py` and verify the previous
+the new llama.cpp model ID. Restart `flamoris-agent-chat` and verify the previous
 conversation notice and its use as context. Exit again and confirm the
 conversation/session/instance end timestamps are populated.
 
-The tests (`python -m unittest discover -s tests -v`) use fake network and DB
+The tests (`python -m pip install -e '.[dev]'` then `pytest`) use fake network and DB
 responses. They verify request/response handling, model provenance, context,
 message writes, and shutdown without needing GPU weights or credentials.
 The real deployment acceptance above must be performed in that environment.
@@ -54,3 +54,4 @@ The real deployment acceptance above must be performed in that environment.
 
 The Phase 0 client calls llama.cpp directly as authorized by Issue #2. A later
 phase can move execution to Intelligence MCP without moving Agent-owned state.
+
