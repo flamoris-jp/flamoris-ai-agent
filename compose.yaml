@@ -1,0 +1,22 @@
+services:
+  agent:
+    build: .
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    environment:
+      AGENT_MCP_TOKEN: ${AGENT_MCP_TOKEN:?Set a random Agent service token}
+      AGENT_HTTP_HOST: 0.0.0.0
+      AGENT_HTTP_PORT: "8768"
+    ports:
+      - "127.0.0.1:8768:8768"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 45s
+    mem_limit: 512m
+    pids_limit: 128

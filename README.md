@@ -55,8 +55,6 @@ launch, containing `.env` and `agents/<agent-key>/{personality,flamoris,characte
 An explicit home is authoritative; missing identity files fail rather than silently
 substituting the bundled Umeko. Unrelated working-directory `.env` files are never loaded.
 
-## Intended scope
-
 ## Agent MCP (single principal)
 
 Run `flamoris-agent-mcp` for stdio MCP, using the same environment/runtime
@@ -74,6 +72,12 @@ even after restart; never retry an uncertain operation with a fresh ID automatic
 This is not a multi-user endpoint. stdio inherits the trusted launcher's identity.
 No tools, Memory CRUD, GPU control or automatic Intelligence MCP migration is included.
 The `health` result distinguishes process liveness from untested dependencies.
+
+For a non-root container with private authenticated Streamable HTTP, see
+[Docker deployment](docs/DOCKER.md). PostgreSQL and inference remain external;
+the default Compose port is loopback-only. This is not a public multi-user service.
+
+## Intended scope
 
 The console uses the shared Agent execution boundary described in
 [EXECUTION_CONTRACT.md](docs/EXECUTION_CONTRACT.md). Input/output are bounded;
