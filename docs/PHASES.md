@@ -26,6 +26,11 @@ Direct llama.cpp access stays temporary and allows Track C to progress without
 Track B. Offline tests and completed PRs do not substitute for Phase 0's live
 acceptance. See [the acceptance evidence template](PHASE_0_ACCEPTANCE.md).
 
+On 2026-09-26 the user authorized sequential offline implementation of
+#10 → #11 → #13 (Docker/HTTP) before #2 live acceptance. The phases below retain
+their dependency order; live acceptance gates production readiness, not creation
+of separately reviewable stacked implementation PRs.
+
 ## Current baseline
 
 The imported baseline already separates Agent-facing state from model identity:
@@ -303,4 +308,3 @@ The first question for every migration should be:
 > Does this belong to the Agent, or was it only an implementation detail of the old model runtime?
 
 If it belongs to the Agent and still works, preserve it until evidence shows a reason to change it.
-

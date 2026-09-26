@@ -27,6 +27,7 @@ def get_connection():
         user=_required_env("PGUSER"),
         password=_required_env("PGPASSWORD"),
         connect_timeout=5,
+        options="-c statement_timeout=5000 -c lock_timeout=2000",
         autocommit=True,
     )
 
@@ -77,16 +78,15 @@ def load_runtime_refs(conn) -> dict[str, Any]:
     }
 
 
-def validate_model_ref(conn, model_id, served_model: str):
-    """Refuse to record a GPT-OSS response against a stale Ollama model row."""
+def validate_model_ref(conn, model_id, served_model: str, provider: str = "llama.cpp"):
+    """Validate immutable runtime provenance without choosing a provider."""
     row = conn.execute(
         "SELECT provider, model_name FROM runtime.models WHERE id = %s",
         (model_id,),
     ).fetchone()
-    if row != ("llama.cpp", served_model):
+    if row != (provider, served_model):
         raise RuntimeError(
-            "FLAMORIS_MODEL_KEY must select a llama.cpp model whose model_name "
-            f"matches /v1/models ({served_model!r}); run register_runtime.py first"
+            "Model identity mismatch; run register_runtime with a new model key first"
         )
 
 

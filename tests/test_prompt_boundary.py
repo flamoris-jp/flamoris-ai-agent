@@ -4,7 +4,7 @@ from uuid import UUID
 
 import pytest
 
-from flamoris_ai_agent.chat import (
+from flamoris_ai_agent.prompts import (
     build_messages,
     build_system_prompt,
     format_previous_conversation,
@@ -73,7 +73,7 @@ def test_absent_history_does_not_create_synthetic_user_turn(previous):
 
 
 def test_context_trimming_keeps_reference_data_separate(monkeypatch):
-    monkeypatch.setattr("flamoris_ai_agent.chat.MAX_CONTEXT_MESSAGES", 2)
+    monkeypatch.setattr("flamoris_ai_agent.prompts.MAX_CONTEXT_MESSAGES", 2)
     history = [{"role": "user", "content": str(n)} for n in range(5)]
     data = format_previous_conversation({"messages": [{"sender": "author", "content": "old"}]})
     messages = build_messages(build_system_prompt(CONTEXT), history, data)

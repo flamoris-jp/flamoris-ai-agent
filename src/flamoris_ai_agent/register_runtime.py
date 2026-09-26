@@ -4,6 +4,7 @@ This only adds missing identities; a reused model key is never repointed to
 another model because old runtime.instances refer to that identity.
 """
 
+import asyncio
 import os
 import platform
 
@@ -47,12 +48,15 @@ def register(conn, *, host_key: str, model_key: str, served_model: str):
             raise RuntimeError(f"Model key {model_key!r} already identifies a different model")
 
 
-def main():
+async def register_configured_runtime():
     client = IntelligenceClient(
         os.getenv("INTELLIGENCE_BASE_URL", "http://127.0.0.1:8081"),
         os.getenv("INTELLIGENCE_MODEL"),
     )
-    served_model = client.resolve_model()
+    try:
+        served_model = await client.resolve_model()
+    finally:
+        await client.aclose()
     with get_connection() as conn:
         register(
             conn,
@@ -61,6 +65,10 @@ def main():
             served_model=served_model,
         )
     print(f"Registered host and model: {served_model}")
+
+
+def main():
+    asyncio.run(register_configured_runtime())
 
 
 if __name__ == "__main__":
