@@ -4,6 +4,28 @@ This document defines the staged modernization path for the imported FLAMORIS AI
 
 The goal is to preserve working Agent-owned state and behavior while replacing the old model/runtime coupling incrementally.
 
+## Track C coordination
+
+Canonical cross-repository sequence: [flamoris-ai roadmap](https://github.com/flamoris-jp/flamoris-ai/blob/main/docs/ROADMAP.md).
+Progress authority: [Track C tracker](https://github.com/flamoris-jp/flamoris-ai/issues/7).
+
+| Step | Owning Issue / gate |
+|---|---|
+| Repository foundation | [#6](https://github.com/flamoris-jp/flamoris-ai-agent/issues/6) |
+| Previous-conversation trust boundary | [#7](https://github.com/flamoris-jp/flamoris-ai-agent/issues/7) |
+| Phase 0 runtime acceptance | [#2](https://github.com/flamoris-jp/flamoris-ai-agent/issues/2), including live PostgreSQL/restart evidence |
+| Phase 1 client boundary | [#10](https://github.com/flamoris-jp/flamoris-ai-agent/issues/10), after Phase 0 acceptance |
+| Phase 2 Agent MCP | [#11](https://github.com/flamoris-jp/flamoris-ai-agent/issues/11), after the client boundary |
+| Phase 3 Intelligence MCP adapter | After Track B's public contract is stable |
+
+The original migration document called Intelligence integration Phase 2 and
+Memory/Tools Phases 3/4. The integrated roadmap inserts **Agent MCP as Phase 2**;
+those later phases are now 3/4/5. Historical imported records remain unchanged.
+
+Direct llama.cpp access stays temporary and allows Track C to progress without
+Track B. Offline tests and completed PRs do not substitute for Phase 0's live
+acceptance. See [the acceptance evidence template](PHASE_0_ACCEPTANCE.md).
+
 ## Current baseline
 
 The imported baseline already separates Agent-facing state from model identity:
@@ -49,7 +71,7 @@ This phase is intentionally small.
 
 ### Runtime target
 
-LIME currently provides the GPT-OSS runtime through llama.cpp with an OpenAI-compatible HTTP API.
+Phase 0 targets a configured GPT-OSS runtime through llama.cpp's OpenAI-compatible HTTP API. Verify the deployed runtime separately; this document is not live service status.
 
 Expected local endpoint:
 
@@ -150,6 +172,8 @@ Phase 0 is complete when all of the following are confirmed:
 
 ## Phase 1 — Stabilize the Agent runtime boundary
 
+Implementation authority: [#10](https://github.com/flamoris-jp/flamoris-ai-agent/issues/10).
+
 ### Goal
 
 After Phase 0 proves the old architecture still works, isolate model execution cleanly from Agent-owned state.
@@ -166,7 +190,30 @@ The implementation should remain provider-neutral, but should avoid speculative 
 
 ---
 
-## Phase 2 — Intelligence MCP integration
+## Phase 2 — Agent MCP surface
+
+Implementation authority: [#11](https://github.com/flamoris-jp/flamoris-ai-agent/issues/11).
+
+Expose a deliberately small Agent MCP surface inside this repository. Initial
+candidate capabilities are health and ask. Exact tool names, transport, caller
+scope, conversation lifecycle, concurrency, cancellation, and durable failure
+semantics must be defined before implementation.
+
+Keep MCP transport thin and reuse the Agent runtime. The Agent remains the single
+owner of identity, conversations, memory, knowledge context, and policy.
+Do not expose internal Memory/Knowledge CRUD or tool execution merely because
+MCP exists. Do not treat a caller-supplied conversation ID as authorization.
+
+An initial local-only surface must clearly state its trust boundary. Remote/multi-user
+access needs explicit authentication and conversation isolation. The current
+single-user previous-conversation lookup is not a remote authorization mechanism.
+
+Add a lazy Agent upstream to MCP Hub only after the Agent transport/catalog is
+stable. Avoid double-prefixing the eventual `agent.*` namespace.
+
+---
+
+## Phase 3 — Intelligence MCP integration
 
 ### Goal
 
@@ -197,11 +244,11 @@ The Agent remains authoritative for:
 
 Intelligence MCP remains authoritative for model/provider execution and routing.
 
-Phase 2 should not require a rewrite of Agent persistence.
+Phase 3 should not require a rewrite of Agent persistence.
 
 ---
 
-## Phase 3 — Memory and Knowledge evolution
+## Phase 4 — Memory and Knowledge evolution
 
 Only after the GPT-OSS runtime path is stable should the imported Memory/Knowledge design be reviewed.
 
@@ -219,7 +266,7 @@ The imported schema is a useful starting point, not automatically the final desi
 
 ---
 
-## Phase 4 — Tools and orchestration
+## Phase 5 — Tools and orchestration
 
 Add explicit Agent capabilities only after the Agent runtime and memory boundaries are stable.
 
