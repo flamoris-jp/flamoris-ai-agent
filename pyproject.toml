@@ -9,15 +9,16 @@ description = "Persistent FLAMORIS Agent runtime"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
-dependencies = ["httpx>=0.28,<1", "psycopg[binary]>=3.2,<4", "python-dotenv>=1,<2"]
+dependencies = ["httpx>=0.28,<1", "psycopg[binary]>=3.2,<4", "python-dotenv>=1,<2", "mcp>=2.2,<3", "pydantic>=2.11,<3"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<10", "ruff>=0.14,<1", "build>=1.2,<2"]
+dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.14,<1", "build>=1.2,<2"]
 
 [project.scripts]
 flamoris-agent-chat = "flamoris_ai_agent.chat:main"
 flamoris-agent-register-runtime = "flamoris_ai_agent.register_runtime:main"
 flamoris-agent-verify-db = "flamoris_ai_agent.verify_db:main"
+flamoris-agent-mcp = "flamoris_ai_agent.server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/flamoris_ai_agent"]
@@ -29,6 +30,7 @@ packages = ["src/flamoris_ai_agent"]
 include = ["src", "agents", "db", "tests", "docs", "history", "*.md", "LICENSE", "pyproject.toml", "requirements.txt", ".env.example"]
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.ruff]

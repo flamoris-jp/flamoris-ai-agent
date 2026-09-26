@@ -161,22 +161,25 @@ def start_instance(conn, refs: dict[str, Any]):
     ).fetchone()[0]
 
 
-def start_conversation(conn, refs, instance_id, system_prompt, system_context):
+def start_conversation(
+    conn, refs, instance_id, system_prompt, system_context, *, conversation_id=None, metadata=None
+):
     with conn.transaction():
         conversation_id = conn.execute(
             """
             INSERT INTO chat.conversations (
-                project_id, primary_agent_id, system_prompt, system_context, metadata
+                id, project_id, primary_agent_id, system_prompt, system_context, metadata
             )
-            VALUES (%s, %s, %s, %s, %s)
+            VALUES (COALESCE(%s::uuid, gen_random_uuid()), %s, %s, %s, %s, %s)
             RETURNING id
             """,
             (
+                conversation_id,
                 refs["project_id"],
                 refs["agent_id"],
                 system_prompt,
                 Jsonb(system_context),
-                Jsonb({"client": "umeko-chat"}),
+                Jsonb(metadata if metadata is not None else {"client": "umeko-chat"}),
             ),
         ).fetchone()[0]
 
