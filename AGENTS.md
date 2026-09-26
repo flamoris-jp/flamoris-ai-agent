@@ -6,7 +6,7 @@ These instructions apply to the entire repository.
 
 This repository is for the persistent FLAMORIS AI Agent runtime and its agent-owned state.
 
-**Current status:** a pre-repository Umeko/Ollama/PostgreSQL baseline has been imported for preservation. Treat it as migration input, not as proof that the current target runtime architecture is implemented or validated.
+**Current status:** the pre-repository Umeko/Ollama/PostgreSQL baseline is preserved as migration input. The packaged console runtime and bounded Agent MCP surface are implemented, with an optional GPT-OSS/llama.cpp Phase 0 path. Live deployment acceptance remains separate from mock/CI validation.
 
 ## Imported baseline rules
 
