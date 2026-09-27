@@ -83,7 +83,7 @@ The console and stdio commands remain available by overriding the image command.
 
 ## Verification
 
-CI builds/runs the image, verifies installed entrypoints/personality and liveness,
+CI builds/runs the image, verifies installed entrypoints/manifest context resources and liveness,
 and rejects unauthenticated MCP requests without real services. Offline tests
 exercise authenticated MCP initialization and asks using fakes. Phase 0's live
 console acceptance was completed in #2; a new HTTP deployment still requires
