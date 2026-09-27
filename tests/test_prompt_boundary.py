@@ -49,16 +49,16 @@ def test_previous_author_roles_and_provenance_are_preserved_as_data():
         "conversation_id": conversation_id,
         "created_at": created_at,
         "messages": [
-            {"role": "user", "sender": "愛乃", "content": "新曲について", "created_at": created_at},
-            {"role": "assistant", "sender": "梅子", "content": "前回の提案"},
+            {"role": "user", "sender": "Example User", "content": "Project update", "created_at": created_at},
+            {"role": "assistant", "sender": "Example Agent", "content": "Previous suggestion"},
         ],
     }
     data = json.loads(format_previous_conversation(previous))["conversation"]
     assert data["conversation_id"] == str(conversation_id)
     assert data["created_at"] == created_at.isoformat()
     assert [(m["role"], m["sender"]) for m in data["messages"]] == [
-        ("user", "愛乃"),
-        ("assistant", "梅子"),
+        ("user", "Example User"),
+        ("assistant", "Example Agent"),
     ]
 
 
