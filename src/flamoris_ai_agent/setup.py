@@ -41,7 +41,7 @@ def setup_identity(conn) -> None:
             (project_key, project_slug, project_name),
         ).fetchone()[0]
 
-        human_id = conn.execute(
+        conn.execute(
             """
             INSERT INTO core.humans (human_key, display_name)
             VALUES (%s, %s)
