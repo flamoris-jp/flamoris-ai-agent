@@ -47,10 +47,10 @@ There is no automatic schema, seed, or runtime registration on startup.
     docker compose up -d
 
 Compose reads .env at runtime, enforces a required token and publishes
-127.0.0.1:8768 → container 8768 by default. The bundled public Umeko context is used
+127.0.0.1:8768 → container 8768 by default. The bundled public example Agent context is used
 unless explicitly overridden. For private editable context, set
 FLAMORIS_AGENT_HOME=/context and add a read-only mount of the intended directory
-with agents/<agent-key>/{personality,flamoris,characters}.md. Missing explicit context
+with agents/<agent-key>/agent.toml and its listed Markdown files. Missing explicit context
 fails rather than silently changing identity. Do not mount unrelated host folders.
 Never bake .env or private context into the image.
 
@@ -85,7 +85,6 @@ The console and stdio commands remain available by overriding the image command.
 
 CI builds/runs the image, verifies installed entrypoints/personality and liveness,
 and rejects unauthenticated MCP requests without real services. Offline tests
-exercise authenticated MCP initialization and asks using fakes. These do NOT close
-#2: record actual GPT-OSS response, existing identity, DB messages/provenance,
-clean shutdown and restart/explicit parent continuation on the deployed revision.
-Do not mark this production-ready until the live checklist passes.
+exercise authenticated MCP initialization and asks using fakes. Phase 0's live
+console acceptance was completed in #2; a new HTTP deployment still requires
+its own operational validation.

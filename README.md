@@ -2,7 +2,7 @@
 
 Persistent AI agent runtime for FLAMORIS.
 
-**Status: the packaged console and bounded Agent MCP surface are implemented, with a generic single-principal setup flow and an optional GPT-OSS/llama.cpp path. Live deployment-environment acceptance is tracked separately.**
+**Status: the packaged console and bounded Agent MCP surface are implemented, with a generic single-principal setup flow. Phase 0 live acceptance on GPT-OSS/llama.cpp was completed in #2.**
 
 Part of the [FLAMORIS AI](https://github.com/flamoris-jp/flamoris-ai) family.
 
@@ -23,8 +23,10 @@ It includes:
 
 The baseline is preserved intentionally so future phases can migrate from known working ideas instead of redesigning from memory. Existing assumptions such as direct Ollama access, machine-specific runtime identities, and the old DB shape are historical inputs, not automatically current architecture requirements.
 
-See [the migration phases](docs/PHASES.md) and [Phase 0 runbook](docs/PHASE_0_RUNBOOK.md)
-for the current single-principal deployment flow.
+Start with the [installation guide](docs/INSTALL.md), then see
+[Agent context](docs/AGENT_CONTEXT.md) for custom Agents. The
+[migration phases](docs/PHASES.md) and [Phase 0 runbook](docs/PHASE_0_RUNBOOK.md)
+record the historical GPT-OSS deployment path.
 
 Secrets are not part of the baseline. The real `.env` remains untracked; only `.env.example` is committed.
 
@@ -47,31 +49,16 @@ Use `flamoris-agent-setup`, `flamoris-agent-chat`, `flamoris-agent-register-runt
 `flamoris-agent-verify-db` after installation. `python -m flamoris_ai_agent.chat`
 is also supported. See [the history inventory](history/README.md) for moved records.
 
-Source/editable installs keep using the repository-root `.env` and `agents/`.
-Wheel installs use bundled context and process environment by default. For an
-editable deployment context, set **an absolute** `FLAMORIS_AGENT_HOME` before
-launch, containing `.env` and `agents/<agent-key>/{personality,flamoris,characters}.md`.
-An explicit home is authoritative; missing identity files fail rather than silently
-substituting the bundled example Agent. Unrelated working-directory `.env` files are never loaded.
+Source/editable installs use the repository-root `.env` and `agents/`. Wheel
+installs use bundled example context and process environment by default. An
+absolute `FLAMORIS_AGENT_HOME` selects a private `.env` and
+`agents/<agent-key>/agent.toml` with ordered Markdown sections. It is
+authoritative; a missing selected Agent fails. See [the context contract](docs/AGENT_CONTEXT.md).
 
 ## Fresh database setup
 
-The public repository does not ship deployment-specific identities. After applying
-`db/01_schema.sql`, copy `.env.example` to a private `.env`, replace the synthetic
-identity values with deployment-specific values, and run:
-
-```sh
-flamoris-agent-setup
-flamoris-agent-verify-db
-```
-
-`flamoris-agent-setup` creates or updates the configured human, Agent, project and
-application records, then registers the configured host/model through the existing
-runtime registration checks. Stable keys are not silently repointed to a different
-host or served model.
-
-`db/02_seed_example.sql` is synthetic English-only sample data for local examples
-and tests. It is not the production setup path.
+Follow [INSTALL.md](docs/INSTALL.md) for the database, environment, Agent context,
+setup, and verification steps. The public example seed is not a deployment setup path.
 
 ## Agent MCP (single principal)
 
@@ -100,7 +87,7 @@ the default Compose port is loopback-only. This is not a public multi-user servi
 The console uses the shared Agent execution boundary described in
 [EXECUTION_CONTRACT.md](docs/EXECUTION_CONTRACT.md). Input/output are bounded;
 inference errors are fixed codes and never expose provider bodies or credentials.
-Live acceptance in #2 remains outstanding; offline tests are not deployment evidence.
+Phase 0 live acceptance in #2 is complete; offline tests remain separate from deployment evidence.
 
 The current packaged runtime already owns the Agent-side conversation/session boundary used by the console and Agent MCP, along with its configured identity/personality/prompt context and PostgreSQL-backed Agent state.
 
@@ -204,7 +191,7 @@ FLAMORIS software is provided as-is and does not include guaranteed individual s
 
 FLAMORIS AI Agentは、FLAMORISで長く動き続けるAI Agentのためのリポジトリです。
 
-**旧梅子の実装を保存しつつ、packaged consoleとbounded Agent MCP surfaceまで実装済みです。Phase 0にはllama.cpp経由のGPT-OSS経路も含まれ、実際のdeployment環境でのacceptanceは別途確認します。**
+**旧梅子の実装を保存しつつ、packaged consoleとbounded Agent MCP surfaceまで実装済みです。Phase 0のGPT-OSS/llama.cpp実機確認は#2で完了しました。**
 
 現在のpackaged runtimeは、consoleとAgent MCPが使うConversation / Session境界、設定されたidentity / personality / prompt context、PostgreSQL上のAgent側状態をすでに担当しています。
 

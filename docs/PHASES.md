@@ -22,9 +22,9 @@ The original migration document called Intelligence integration Phase 2 and
 Memory/Tools Phases 3/4. The integrated roadmap inserts **Agent MCP as Phase 2**;
 those later phases are now 3/4/5. Historical imported records remain unchanged.
 
-Direct llama.cpp access stays temporary and allows Track C to progress without
-Track B. Offline tests and completed PRs do not substitute for Phase 0's live
-acceptance. See [the acceptance evidence template](PHASE_0_ACCEPTANCE.md).
+Direct llama.cpp access remains the current Phase 0 adapter. Phase 0 live
+acceptance was completed in #2; offline tests and completed PRs alone would not
+have substituted for it. See [the historical evidence template](PHASE_0_ACCEPTANCE.md).
 
 On 2026-09-26 the user authorized sequential offline implementation of
 #10 → #11 → #13 (Docker/HTTP) before #2 live acceptance. The phases below retain
