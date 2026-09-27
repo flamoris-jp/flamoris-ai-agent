@@ -1,30 +1,27 @@
-# Phase 0: wake Umeko on GPT-OSS
+# Phase 0: single-principal Agent on GPT-OSS
 
-Run the console app on a runtime host where the llama.cpp endpoint is reachable on
-`127.0.0.1:8081`. The imported database schema and Umeko agent key stay intact.
-The model and host are separate runtime identities.
+Run the Agent on a runtime host where the llama.cpp endpoint is reachable on
+`127.0.0.1:8081`. Human, Agent, project, host, application, and model identities
+come from the deployment's private environment configuration.
 
 ## Preparation
 
-1. Ensure the existing `flamoris_ai` database, `db/01_schema.sql`, and
-   `db/02_seed_umeko.sql` have already been applied. Do not rerun the entire
-   schema against a live database as part of this migration.
+1. For a fresh database, apply `db/01_schema.sql` once as the database administrator.
+   Do not use deployment-specific seed data from the public repository.
 2. On the runtime host, start the GPT-OSS llama.cpp server using the local runtime setup.
    Confirm `curl http://127.0.0.1:8081/health` and
    `curl http://127.0.0.1:8081/v1/models`. Copy the exact `data[].id` reported
    by the server; the filename or friendly name may differ.
 3. From the repository root, run `python -m pip install -e .` in a Python virtual
-   environment. Copy `.env.example` to `.env` and set your PostgreSQL
-   connection, `FLAMORIS_HOST_KEY=local-host`, and a fresh
-   `FLAMORIS_MODEL_KEY=llama.cpp:gpt-oss-20b`. Keep `.env` untracked.
-   If the endpoint lists multiple models, set `INTELLIGENCE_MODEL` to the exact
-   served ID. An existing model key must never be reused for a different ID.
-4. Run `flamoris-agent-register-runtime`. This explicitly adds the
-   runtime host and the currently served model to the existing runtime tables.
-   It refuses to repoint an existing host/model key. The old Ollama model row
-   and existing runtime instances stay unchanged.
-5. Run `flamoris-agent-verify-db`, then
-   `flamoris-agent-chat`. Ask 梅子 a question and exit with `/bye`.
+   environment. Copy `.env.example` to `.env` and replace every synthetic identity
+   with private deployment values. Keep `.env` untracked. If the endpoint lists
+   multiple models, set `INTELLIGENCE_MODEL` to the exact served ID. An existing
+   model key must never be reused for a different served model.
+4. Run `flamoris-agent-setup`. It creates/updates the configured human, Agent,
+   project and application records and registers the runtime host/model using the
+   existing conflict checks.
+5. Run `flamoris-agent-verify-db`, then `flamoris-agent-chat`. Send one harmless
+   test message and exit with `/bye`.
 
 If the runtime manager switches GPU ownership, start the `llm` profile first.
 This app never launches or stops the model server itself.
@@ -33,7 +30,7 @@ This app never launches or stops the model server itself.
 
 After the first chat, check the new conversation and message rows in the
 existing `chat` tables and the matching `runtime.instances` record. The
-instance should reference the same Umeko agent ID as older instances and
+instance should reference the same Agent agent ID as older instances and
 the new llama.cpp model ID. Restart `flamoris-agent-chat` and verify the previous
 conversation notice and its use as context. Exit again and confirm the
 conversation/session/instance end timestamps are populated.
