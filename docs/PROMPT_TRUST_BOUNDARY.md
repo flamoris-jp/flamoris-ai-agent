@@ -1,6 +1,6 @@
 # Previous-conversation trust boundary
 
-The Agent's local personality/context files and fixed rules form the system
+The Agent's ordered deployment context sections and runtime-owned rules form the system
 message. Retrieved previous conversation text is never interpolated into that
 governing message.
 
