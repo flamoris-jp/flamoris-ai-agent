@@ -10,7 +10,10 @@ from flamoris_ai_agent.prompts import (
     format_previous_conversation,
 )
 
-CONTEXT = {"personality.md": "identity", "flamoris.md": "world", "characters.md": "cast"}
+CONTEXT = [
+    {"title": "Identity", "file": "identity.md", "content": "identity"},
+    {"title": "Legal knowledge", "file": "legal.md", "content": "domain facts"},
+]
 
 
 @pytest.mark.parametrize(
@@ -85,3 +88,10 @@ def test_context_trimming_keeps_reference_data_separate(monkeypatch):
     assert [m["content"] for m in messages[-2:]] == ["3", "4"]
     assert json.loads(messages[1]["content"])["kind"] == "untrusted_previous_conversation"
     assert len(history) == 5
+
+
+def test_custom_sections_appear_in_order_without_fixed_categories():
+    policy = build_system_prompt(CONTEXT)
+    assert policy.index("## Identity") < policy.index("## Legal knowledge")
+    assert "Project knowledge" not in policy
+    assert "Character / relationship context" not in policy

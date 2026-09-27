@@ -4,10 +4,11 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 
 from flamoris_ai_agent import chat
+from flamoris_ai_agent.config import AgentContextError
 from flamoris_ai_agent.execution import ExecutionResult, IntelligenceError, ModelIdentity
 from flamoris_ai_agent.runtime import AgentSession, PostgresStore
 
-CONTEXT = {"personality.md": "identity", "flamoris.md": "world", "characters.md": "cast"}
+CONTEXT = [{"title": "Identity", "file": "identity.md", "content": "identity"}]
 IDENTITY = ModelIdentity("fake", "served")
 
 
@@ -32,6 +33,7 @@ def test_identity_context_writes_and_shutdown():
         assert "old story" not in s.store.start.call_args.args[0]
         assert "old story" in s.client.execute.call_args.args[0].messages[1]["content"]
         assert s.store.start.call_args.args[1]["previous_conversation"] == s.previous
+        assert s.store.start.call_args.args[1]["agent_sections"] == CONTEXT
         assert [c.args[0] for c in s.store.save.call_args_list] == ["user", "assistant"]
         assert s.store.save.call_args_list[-1].args[2] == {
             "intelligence_model": "served",
@@ -92,6 +94,18 @@ def test_start_failure_always_closes_resources():
         await s.aclose()
         s.store.close.assert_called_once()
         s.client.aclose.assert_awaited_once()
+
+    asyncio.run(run())
+
+
+def test_invalid_context_has_distinct_startup_code():
+    async def run():
+        s = session()
+        s.context_loader = lambda: (_ for _ in ()).throw(AgentContextError("missing manifest"))
+        with pytest.raises(IntelligenceError, match="^invalid_agent_context$"):
+            await s.start()
+        s.client.resolve.assert_not_awaited()
+        await s.aclose()
 
     asyncio.run(run())
 
