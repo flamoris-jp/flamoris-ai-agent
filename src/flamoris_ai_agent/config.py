@@ -30,7 +30,7 @@ if AGENT_HOME is not None:
 
 
 def load_agent_text(filename: str) -> str:
-    key = os.getenv("FLAMORIS_AGENT_KEY", "umeko")
+    key = os.getenv("FLAMORIS_AGENT_KEY", "example-agent")
     if not re.fullmatch(r"[A-Za-z0-9_-]+", key):
         raise ValueError("FLAMORIS_AGENT_KEY must be a simple agent name")
     if filename not in {"personality.md", "flamoris.md", "characters.md"}:
