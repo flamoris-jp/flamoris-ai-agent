@@ -49,7 +49,12 @@ def test_previous_author_roles_and_provenance_are_preserved_as_data():
         "conversation_id": conversation_id,
         "created_at": created_at,
         "messages": [
-            {"role": "user", "sender": "Example User", "content": "Project update", "created_at": created_at},
+            {
+                "role": "user",
+                "sender": "Example User",
+                "content": "Project update",
+                "created_at": created_at,
+            },
             {"role": "assistant", "sender": "Example Agent", "content": "Previous suggestion"},
         ],
     }
