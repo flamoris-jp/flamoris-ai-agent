@@ -30,7 +30,7 @@ This app never launches or stops the model server itself.
 
 After the first chat, check the new conversation and message rows in the
 existing `chat` tables and the matching `runtime.instances` record. The
-instance should reference the same Agent agent ID as older instances and
+instance should reference the same Agent ID as older instances and
 the new llama.cpp model ID. Restart `flamoris-agent-chat` and verify the previous
 conversation notice and its use as context. Exit again and confirm the
 conversation/session/instance end timestamps are populated.
