@@ -10,36 +10,36 @@ async def run_console():
     session = configured_session()
     try:
         await session.start(load_previous=True)
-        print("梅子を起動しました。終了は /bye")
+        print("Agent started. Use /bye to exit.")
         print(f"conversation_id = {session.conversation_id}")
         print(f"instance_id     = {session.instance_id}")
         if session.previous:
-            print(f"前回conversationを読み込みました: {session.previous['conversation_id']}")
+            print(f"Previous conversation loaded: {session.previous['conversation_id']}")
         else:
-            print("前回conversationはありません。")
+            print("No previous conversation.")
         while True:
-            text = input("愛乃> ").strip()
+            text = input("You> ").strip()
             if not text:
                 continue
             if text == "/bye":
-                print("梅> またね。")
+                print("Agent> Goodbye.")
                 break
             try:
                 result = await session.ask(text)
-                print(f"梅> {result.text}")
+                print(f"Agent> {result.text}")
             except IntelligenceError as exc:
-                print(f"梅> 処理に失敗しました: {exc.code}")
+                print(f"Agent> Request failed: {exc.code}")
                 if session.failed:
                     break
     except (KeyboardInterrupt, EOFError, asyncio.CancelledError):
-        print("\n梅> 今日はここまでにするね。")
+        print("\nAgent> Session interrupted.")
     except IntelligenceError as exc:
-        print(f"梅> 起動・保存に失敗しました: {exc.code}")
+        print(f"Agent> Startup or persistence failed: {exc.code}")
     finally:
         try:
             await session.aclose()
         except IntelligenceError as exc:
-            print(f"梅> 終了処理を確認してください: {exc.code}")
+            print(f"Agent> Shutdown requires attention: {exc.code}")
 
 
 def main():
