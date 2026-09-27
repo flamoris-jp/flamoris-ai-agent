@@ -4,6 +4,7 @@ import asyncio
 import os
 
 from flamoris_ai_agent import db, prompts
+from flamoris_ai_agent.config import AgentContextError
 from flamoris_ai_agent.execution import (
     MAX_OUTPUT_BYTES,
     MAX_USER_BYTES,
@@ -89,16 +90,22 @@ class AgentSession:
         if self.started or self.closed or self.failed:
             raise IntelligenceError("invalid_lifecycle")
         try:
-            self.identity = await self.client.resolve()
             context = self.context_loader()
+            self.identity = await self.client.resolve()
             self.previous = self.store.open(self.identity, load_previous)
             self.previous_text = prompts.format_previous_conversation(self.previous)
             self.policy = prompts.build_system_prompt(context)
             validate_messages(prompts.build_messages(self.policy, [], self.previous_text))
             self.conversation_id, self.instance_id = self.store.start(
-                self.policy, prompts.json_safe({**context, "previous_conversation": self.previous})
+                self.policy,
+                prompts.json_safe(
+                    {"agent_sections": context, "previous_conversation": self.previous}
+                ),
             )
             self.started = True
+        except AgentContextError:
+            self.failed = True
+            raise IntelligenceError("invalid_agent_context") from None
         except IntelligenceError:
             self.failed = True
             raise

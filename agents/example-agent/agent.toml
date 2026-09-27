@@ -1,0 +1,9 @@
+version = 1
+
+[[context]]
+title = "Identity"
+file = "identity.md"
+
+[[context]]
+title = "Support scope"
+file = "support.md"
