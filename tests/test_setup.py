@@ -49,9 +49,7 @@ class FakeConnection:
             self.agent = (3, params[1], params[2], params[3])
             return Result((3,))
 
-        if normalized.startswith(
-            "SELECT project_role, inherit_parent FROM core.agent_projects"
-        ):
+        if normalized.startswith("SELECT project_role, inherit_parent FROM core.agent_projects"):
             return Result(self.membership)
         if normalized.startswith("INSERT INTO core.agent_projects"):
             self.membership = ("member", True)
