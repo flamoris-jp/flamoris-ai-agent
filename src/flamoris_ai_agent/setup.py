@@ -16,9 +16,7 @@ def _optional_env(name: str, default: str) -> str:
 
 def _require_match(label: str, key: str, actual, expected) -> None:
     if actual != expected:
-        raise RuntimeError(
-            f"{label} key {key!r} already exists with different identity metadata"
-        )
+        raise RuntimeError(f"{label} key {key!r} already exists with different identity metadata")
 
 
 def setup_identity(conn) -> None:
