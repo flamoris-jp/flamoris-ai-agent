@@ -16,6 +16,7 @@ dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.14,<1", "build>=1.2,<2"
 
 [project.scripts]
 flamoris-agent-chat = "flamoris_ai_agent.chat:main"
+flamoris-agent-setup = "flamoris_ai_agent.setup:main"
 flamoris-agent-register-runtime = "flamoris_ai_agent.register_runtime:main"
 flamoris-agent-verify-db = "flamoris_ai_agent.verify_db:main"
 flamoris-agent-mcp = "flamoris_ai_agent.server:main"

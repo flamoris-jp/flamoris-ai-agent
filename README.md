@@ -2,7 +2,7 @@
 
 Persistent AI agent runtime for FLAMORIS.
 
-**Status: the imported Umeko baseline is preserved, the packaged console and bounded Agent MCP surface are implemented, and Phase 0 includes an optional GPT-OSS/llama.cpp path. Live deployment-environment acceptance is tracked separately.**
+**Status: the packaged console and bounded Agent MCP surface are implemented, with a generic single-principal setup flow and an optional GPT-OSS/llama.cpp path. Live deployment-environment acceptance is tracked separately.**
 
 Part of the [FLAMORIS AI](https://github.com/flamoris-jp/flamoris-ai) family.
 
@@ -16,7 +16,7 @@ The initial source baseline was imported from the existing `flamoris_ai` working
 
 It includes:
 
-- `agents/umeko` personality, FLAMORIS knowledge, and character context;
+- historical deployment-specific Agent context preserved only under `history/`;
 - `src/flamoris_ai_agent` active console chat/runtime package;
 - PostgreSQL schema, seed, and smoke-test SQL under `db`;
 - the 2026-08-16 design notes and earlier prototype history.
@@ -24,7 +24,7 @@ It includes:
 The baseline is preserved intentionally so future phases can migrate from known working ideas instead of redesigning from memory. Existing assumptions such as direct Ollama access, machine-specific runtime identities, and the old DB shape are historical inputs, not automatically current architecture requirements.
 
 See [the migration phases](docs/PHASES.md) and [Phase 0 runbook](docs/PHASE_0_RUNBOOK.md)
-to register the currently served GPT-OSS model and run the Umeko console.
+for the current single-principal deployment flow.
 
 Secrets are not part of the baseline. The real `.env` remains untracked; only `.env.example` is committed.
 
@@ -37,15 +37,14 @@ Tests use fake providers and DB connections; no GPU or private credentials are n
 | Path | Responsibility |
 |---|---|
 | `src/flamoris_ai_agent/` | Active runtime and packaged entry points |
-| `agents/umeko/` | Active local personality/context, included in the wheel |
-| `db/` | Existing PostgreSQL schema and seed, unchanged by packaging |
+| `agents/example-agent/` | Synthetic English-only packaged example context |
+| `db/` | Generic PostgreSQL schema and synthetic example seed |
 | `tests/` | Offline tests and installed-wheel smoke check |
 | `docs/` | Current migration/runbook and forward design |
 | `history/` | Imported records, prototypes, patches, and retired Ollama definitions |
 
-Use `flamoris-agent-chat`, `flamoris-agent-register-runtime`, and
-`flamoris-agent-verify-db` after installation. The former `apps/umeko_chat/*.py`
-script paths have moved to the package. `python -m flamoris_ai_agent.chat`
+Use `flamoris-agent-setup`, `flamoris-agent-chat`, `flamoris-agent-register-runtime`, and
+`flamoris-agent-verify-db` after installation. `python -m flamoris_ai_agent.chat`
 is also supported. See [the history inventory](history/README.md) for moved records.
 
 Source/editable installs keep using the repository-root `.env` and `agents/`.
@@ -53,7 +52,26 @@ Wheel installs use bundled context and process environment by default. For an
 editable deployment context, set **an absolute** `FLAMORIS_AGENT_HOME` before
 launch, containing `.env` and `agents/<agent-key>/{personality,flamoris,characters}.md`.
 An explicit home is authoritative; missing identity files fail rather than silently
-substituting the bundled Umeko. Unrelated working-directory `.env` files are never loaded.
+substituting the bundled example Agent. Unrelated working-directory `.env` files are never loaded.
+
+## Fresh database setup
+
+The public repository does not ship deployment-specific identities. After applying
+`db/01_schema.sql`, copy `.env.example` to a private `.env`, replace the synthetic
+identity values with deployment-specific values, and run:
+
+```sh
+flamoris-agent-setup
+flamoris-agent-verify-db
+```
+
+`flamoris-agent-setup` creates or updates the configured human, Agent, project and
+application records, then registers the configured host/model through the existing
+runtime registration checks. Stable keys are not silently repointed to a different
+host or served model.
+
+`db/02_seed_example.sql` is synthetic English-only sample data for local examples
+and tests. It is not the production setup path.
 
 ## Agent MCP (single principal)
 

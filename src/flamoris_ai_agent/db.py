@@ -13,8 +13,8 @@ def _required_env(name: str) -> str:
     value = os.getenv(name)
     if not value:
         raise RuntimeError(
-            f"環境変数 {name} がありません。"
-            f"環境設定または {AGENT_HOME} の .env を確認してください。"
+            f"Required environment variable {name} is missing. "
+            f"Check the process environment or {AGENT_HOME} .env configuration."
         )
     return value
 
@@ -36,8 +36,8 @@ def _lookup_one(conn, sql: str, value: str, label: str):
     row = conn.execute(sql, (value,)).fetchone()
     if not row:
         raise RuntimeError(
-            f"{label} '{value}' がDBに登録されていません。"
-            " db/02_seed_umeko.sql を実行したか確認してください。"
+            f"{label} {value!r} is not registered. "
+            "Run flamoris-agent-setup for the configured deployment."
         )
     return row[0]
 
@@ -179,7 +179,7 @@ def start_conversation(
                 refs["agent_id"],
                 system_prompt,
                 Jsonb(system_context),
-                Jsonb(metadata if metadata is not None else {"client": "umeko-chat"}),
+                Jsonb(metadata if metadata is not None else {"client": "flamoris-ai-agent"}),
             ),
         ).fetchone()[0]
 
