@@ -17,14 +17,19 @@ from flamoris_ai_agent.intelligence import IntelligenceClient
 
 
 class PostgresStore:
-    def __init__(self):
+    def __init__(self, refs_loader=None):
         self.conn = None
         self.runtime = None
         self.instance_id = None
+        self.refs_loader = refs_loader
 
     def open(self, identity, load_previous):
         self.conn = db.get_connection()
-        self.refs = db.load_runtime_refs(self.conn)
+        self.refs = (
+            self.refs_loader(self.conn)
+            if self.refs_loader is not None
+            else db.load_runtime_refs(self.conn)
+        )
         db.validate_model_ref(self.conn, self.refs["model_id"], identity.model, identity.provider)
         return (
             db.get_previous_conversation(
