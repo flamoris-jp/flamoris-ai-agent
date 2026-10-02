@@ -31,6 +31,7 @@ def database():
             END IF;
             END $$;
         """)
+        conn.execute("GRANT CREATE ON DATABASE agent_test TO flamoris_ai_owner")
         root = Path(__file__).resolve().parents[1]
         conn.execute((root / "db/01_schema.sql").read_text())
         migration = (root / "db/migrations/002_principal_sessions.sql").read_text()
