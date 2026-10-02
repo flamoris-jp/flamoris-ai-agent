@@ -21,9 +21,21 @@ def scope_id(refs):
 
 
 class MCPStore(PostgresStore):
-    def __init__(self, request):
-        super().__init__()
+    def __init__(self, request, *, binding=None, principals=None):
+        if (binding is None) != (principals is None):
+            raise IntelligenceError("principal_unavailable")
+        self.binding, self.principals = binding, principals
+        super().__init__(self._scoped_refs if binding is not None else None)
         self.request = request
+
+    def _scoped_refs(self, conn):
+        binding = self.principals.require_on(conn, self.binding.delegator, self.binding.session_id)
+        if binding != self.binding:
+            raise IntelligenceError("principal_unavailable")
+        refs = db.load_runtime_refs(conn, principal=binding.keys)
+        if any(refs[name] != value for name, value in binding.ids.items()):
+            raise IntelligenceError("principal_unavailable")
+        return refs
 
     def open(self, identity, load_previous=False):
         # Never call the console's unscoped previous-conversation query.
@@ -45,6 +57,7 @@ class MCPStore(PostgresStore):
               AND c.status = 'closed' AND c.ended_at IS NOT NULL
               AND c.metadata->>'client' = 'agent-mcp'
               AND c.metadata->>'scope' = %s
+              AND (c.metadata->>'principal_session') IS NOT DISTINCT FROM %s
               AND EXISTS (
                 SELECT 1 FROM chat.participants p
                 WHERE p.conversation_id = c.id AND p.human_id = %s)
@@ -58,6 +71,7 @@ class MCPStore(PostgresStore):
                 self.refs["project_id"],
                 self.refs["agent_id"],
                 self.scope,
+                str(self.binding.session_id) if self.binding else None,
                 self.refs["human_id"],
                 self.refs["human_id"],
                 self.refs["agent_id"],
@@ -95,9 +109,23 @@ class MCPStore(PostgresStore):
             "scope": self.scope,
             "request_id": self.request.request_id,
             "previous_conversation_id": self.request.previous_conversation_id,
+            **(
+                {
+                    "principal_session": str(self.binding.session_id),
+                    "delegator": self.binding.delegator,
+                }
+                if self.binding
+                else {}
+            ),
         }
         try:
             with self.conn.transaction():
+                if self.binding is not None:
+                    current = self.principals.require_on(
+                        self.conn, self.binding.delegator, self.binding.session_id, lock=True
+                    )
+                    if current != self.binding:
+                        raise IntelligenceError("principal_unavailable")
                 instance = db.start_instance(self.conn, self.refs)
                 runtime = db.start_conversation(
                     self.conn,

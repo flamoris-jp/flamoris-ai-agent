@@ -42,10 +42,13 @@ def _lookup_one(conn, sql: str, value: str, label: str):
     return row[0]
 
 
-def load_runtime_refs(conn) -> dict[str, Any]:
-    human_key = _required_env("FLAMORIS_HUMAN_KEY")
-    agent_key = _required_env("FLAMORIS_AGENT_KEY")
-    project_key = _required_env("FLAMORIS_PROJECT_KEY")
+def load_runtime_refs(conn, *, principal=None) -> dict[str, Any]:
+    # Only the authorized session/store boundary passes an explicit principal.
+    human_key = principal.human if principal is not None else _required_env("FLAMORIS_HUMAN_KEY")
+    agent_key = principal.agent if principal is not None else _required_env("FLAMORIS_AGENT_KEY")
+    project_key = (
+        principal.project if principal is not None else _required_env("FLAMORIS_PROJECT_KEY")
+    )
     host_key = _required_env("FLAMORIS_HOST_KEY")
     application_key = _required_env("FLAMORIS_APPLICATION_KEY")
     model_key = _required_env("FLAMORIS_MODEL_KEY")

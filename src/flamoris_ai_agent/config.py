@@ -47,9 +47,9 @@ def _read_bounded(resource, limit: int, label: str) -> str:
         raise AgentContextError(f"Agent {label} must be UTF-8: {resource}") from exc
 
 
-def load_agent_context() -> list[dict[str, str]]:
+def load_agent_context(agent_key: str | None = None) -> list[dict[str, str]]:
     """Load a manifest's sections in order; never fall back to another Agent."""
-    key = os.getenv("FLAMORIS_AGENT_KEY", "example-agent")
+    key = agent_key if agent_key is not None else os.getenv("FLAMORIS_AGENT_KEY", "example-agent")
     if not re.fullmatch(r"[A-Za-z0-9_-]+", key):
         raise AgentContextError("FLAMORIS_AGENT_KEY must be a simple agent name")
     directory = (
