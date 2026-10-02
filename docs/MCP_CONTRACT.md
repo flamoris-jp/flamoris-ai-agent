@@ -9,7 +9,8 @@ Explicit shared HTTP mode and its separate `sessions.open`/`ask_scoped` catalog
 are specified in [PRINCIPAL_SESSIONS.md](PRINCIPAL_SESSIONS.md). It requires exact
 operator-controlled delegation grants and a trusted authenticated backend; the
 Bearer token is never Human authentication. This document describes the compatible
-fixed-principal catalog. Neither catalog currently advertises ask availability.
+fixed-principal catalog. Shared Image context/ask availability are specified in
+[STUDIO_CONTEXT_V1.md](STUDIO_CONTEXT_V1.md); fixed health stays unchanged.
 
 Local tools are `health` and `ask`; a Hub namespace of `agent` produces
 `agent.health` and `agent.ask`, not agent.agent.ask.

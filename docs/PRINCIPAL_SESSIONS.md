@@ -18,7 +18,8 @@ to browsers or users. Anyone holding the token can request any tuple explicitly
 granted to that delegator.
 
 With no delegator configured, the catalog remains `health`, `ask`. With one
-configured, it is exactly `health`, `sessions.open`, `ask_scoped`; legacy `ask`
+configured, it is exactly `health`, `sessions.open`, `ask_scoped`,
+`ask_availability`; legacy `ask`
 is absent and has no fallback. Mixed service/transport modes fail at app creation.
 stdio and console stay fixed-principal. Review exact Hub catalog parity before
 enabling this catalog in a deployment; setting this variable changes discovery.
@@ -36,7 +37,9 @@ dispatch; no fixed-principal conversation or inference is attempted.
 All scoped asks share the existing one-active-request admission guard, cancellation
 and cleanup behavior. This provides isolated logical sessions, not concurrent GPU
 execution. `health` still reports dependencies `not_checked`; it cannot enable
-Studio assistance. No context/proposal/availability tool is advertised yet.
+Studio assistance. The separate scoped availability query and optional bounded
+Image context are specified in [STUDIO_CONTEXT_V1.md](STUDIO_CONTEXT_V1.md).
+No proposal/tool execution is advertised.
 
 ## Authority and lifecycle
 

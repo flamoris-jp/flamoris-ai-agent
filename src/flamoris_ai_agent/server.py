@@ -10,11 +10,37 @@ from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import Field
 
 from flamoris_ai_agent.mcp_service import AgentService, AskRequest
-from flamoris_ai_agent.scoped_service import OpenSessionRequest, ScopedAskRequest
+from flamoris_ai_agent.scoped_service import OpenSessionRequest, ScopedAskRequest, SessionRequest
 
 RequestArgument = Annotated[Any, Field(json_schema_extra=AskRequest.model_json_schema())]
 SessionArgument = Annotated[Any, Field(json_schema_extra=OpenSessionRequest.model_json_schema())]
-ScopedArgument = Annotated[Any, Field(json_schema_extra=ScopedAskRequest.model_json_schema())]
+
+
+def inline_schema(model):
+    # SDK wraps the request as a nested field. Local Pydantic $defs references
+    # otherwise point to the wrong root; publish this finite DTO tree inline.
+    schema = model.model_json_schema()
+    definitions = schema.pop("$defs", {})
+
+    def expand(value):
+        if isinstance(value, list):
+            return [expand(item) for item in value]
+        if isinstance(value, dict):
+            if "$ref" in value:
+                return expand(
+                    {
+                        **definitions[value["$ref"].split("/")[-1]],
+                        **{k: v for k, v in value.items() if k != "$ref"},
+                    }
+                )
+            return {key: expand(item) for key, item in value.items()}
+        return value
+
+    return expand(schema)
+
+
+ScopedArgument = Annotated[Any, Field(json_schema_extra=inline_schema(ScopedAskRequest))]
+AvailabilityArgument = Annotated[Any, Field(json_schema_extra=SessionRequest.model_json_schema())]
 
 
 def tool_result(data):
@@ -51,6 +77,19 @@ def create_server(service=None):
         return tool_result(service.health())
 
     if getattr(service, "shared_principals", False):
+
+        @server.tool(
+            name="ask_availability",
+            annotations=ToolAnnotations(
+                read_only_hint=True,
+                destructive_hint=False,
+                idempotent_hint=True,
+                open_world_hint=False,
+            ),
+        )
+        async def availability(request: AvailabilityArgument = None) -> CallToolResult:
+            """Fresh scoped prerequisites; no inference, conversation or runtime activation."""
+            return tool_result(await service.availability(request))
 
         @server.tool(
             name="sessions.open",

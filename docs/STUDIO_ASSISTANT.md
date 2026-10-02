@@ -7,8 +7,10 @@ Status: proposed Agent contract design, 2026-10-02. Coordination: [FLAMORIS AI #
 Implementation progress: exact persisted grants and opt-in shared HTTP sessions
 are described in [PRINCIPAL_SESSIONS.md](PRINCIPAL_SESSIONS.md). The approved
 local-only synchronous execution adapter is described in
-[INTELLIGENCE_MCP.md](INTELLIGENCE_MCP.md). These do not activate Studio assistance
-or implement the context/availability/remote-policy gates below.
+[INTELLIGENCE_MCP.md](INTELLIGENCE_MCP.md). Limited Image context revision 1 and
+read-only scoped prerequisite availability are described in
+[STUDIO_CONTEXT_V1.md](STUDIO_CONTEXT_V1.md). These do not activate Studio
+assistance or implement remote export/proposal/additional-media policy below.
 
 Main `aadda1bfc85cc734c475eee033227e37150770fa` implements a fixed-principal service. ask takes request_id, text and optional previous_conversation_id, creates one new conversation, closes it and preserves a durable duplicate fence. health reports process liveness/busy with dependencies=not_checked. The current IntelligenceClient is a bounded temporary direct llama.cpp adapter; provider-neutral Intelligence MCP execution is a migration, not already present.
 
