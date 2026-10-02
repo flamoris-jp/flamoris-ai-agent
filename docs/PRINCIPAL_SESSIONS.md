@@ -1,9 +1,42 @@
 # Persisted principal session foundation
 
 Owning issue: [#18](https://github.com/flamoris-jp/flamoris-ai-agent/issues/18).
-This first delivery is internal. Existing fixed-principal `health`/`ask`, console,
-HTTP authentication and Intelligence execution remain compatible. Shared transport
-session tools and Studio account mappings are not activated by these classes.
+Existing fixed-principal `health`/`ask`, console and Intelligence execution remain
+compatible. Shared HTTP is explicitly opt-in; Studio account mappings, retention
+operations and deployment acceptance remain separate gates.
+
+## Authenticated HTTP catalog
+
+After migration and exact operator grants, `AGENT_HTTP_DELEGATOR_KEY` selects a
+safe stable service caller (1–64 ASCII letters, digits, underscores or hyphens).
+The authenticated private HTTP middleware binds that operator-selected identity
+to the current request. Neither headers supplied as principal claims nor tool
+arguments can replace it. Its Bearer token authenticates this delegator, not a
+Human. This mode is suitable only for a trusted server that independently maps
+its authenticated account to the allowed principal keys; do not expose the token
+to browsers or users. Anyone holding the token can request any tuple explicitly
+granted to that delegator.
+
+With no delegator configured, the catalog remains `health`, `ask`. With one
+configured, it is exactly `health`, `sessions.open`, `ask_scoped`; legacy `ask`
+is absent and has no fallback. Mixed service/transport modes fail at app creation.
+stdio and console stay fixed-principal. Review exact Hub catalog parity before
+enabling this catalog in a deployment; setting this variable changes discovery.
+
+`sessions.open` takes `request: {human, agent, project}` with no other fields.
+It returns `session_id`, UTC `expires_at` and `principal_revision: 1` on success.
+`ask_scoped` takes the existing bounded ask request plus required `session_id`;
+it accepts no identity/provider overrides. The session UUID is canonicalized and
+revalidated for the authenticated caller before constructing a request-local
+AgentSession. Its store and Agent context are captured from the frozen binding.
+Success includes the session ID alongside existing conversation/request/answer
+provenance. A missing caller, denied/expired/revoked binding or DB failure denies
+dispatch; no fixed-principal conversation or inference is attempted.
+
+All scoped asks share the existing one-active-request admission guard, cancellation
+and cleanup behavior. This provides isolated logical sessions, not concurrent GPU
+execution. `health` still reports dependencies `not_checked`; it cannot enable
+Studio assistance. No context/proposal/availability tool is advertised yet.
 
 ## Authority and lifecycle
 
@@ -66,10 +99,15 @@ global mutation, missing bindings and revocation before persistence. CI addition
 uses a disposable PostgreSQL 16 database to apply the original schema and migration
 twice, check exact delegation/other-caller rejection, two-principal restart,
 each revocation gate, SQL immutability, grant-table runtime permissions and bounded
-capacity. Set `TEST_AGENT_DATABASE_URL` only to the disposable `agent_test` database
+capacity. Real SQL parent selection rejects another Human, a different session
+for the same Human and fixed-principal legacy access; duplicate request fencing
+survives a new session while remaining isolated for a different Human. In-process
+Streamable HTTP protocol tests cover authentication-context propagation/reset,
+catalog shape, two request-local AgentSessions, denial before inference and the
+shared admission/cancellation guard. These protocol tests use fake inference.
+Set `TEST_AGENT_DATABASE_URL` only to the disposable `agent_test` database
 to run those tests locally. They do not use live Agent data, GPU or paid inference.
 
-Remaining #18 slices: authenticated transport delegation/session tools, bounded
-shared ask dispatch and full parent/duplicate/concurrent-principal protocol tests;
-explicit Studio-account delegation mapping; session retention and deployed
+Remaining #18 slices: explicit Studio-account delegation mapping;
+session retention and deployed
 two-principal acceptance. #24 context/availability integration follows those gates.

@@ -1,9 +1,15 @@
 # Bounded Agent MCP (#11)
 
-This is a single-principal service, not a multi-user Agent. The trusted stdio
+The default catalog is a single-principal service. The trusted stdio
 launcher/operator selects FLAMORIS_HUMAN_KEY, AGENT_KEY, PROJECT_KEY and immutable
 runtime references. Tool inputs cannot change these identities or the provider.
 HTTP is a separate authenticated deployment layer (#13). No automatic Hub setup.
+
+Explicit shared HTTP mode and its separate `sessions.open`/`ask_scoped` catalog
+are specified in [PRINCIPAL_SESSIONS.md](PRINCIPAL_SESSIONS.md). It requires exact
+operator-controlled delegation grants and a trusted authenticated backend; the
+Bearer token is never Human authentication. This document describes the compatible
+fixed-principal catalog. Neither catalog currently advertises ask availability.
 
 Local tools are `health` and `ask`; a Hub namespace of `agent` produces
 `agent.health` and `agent.ask`, not agent.agent.ask.

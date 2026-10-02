@@ -66,9 +66,10 @@ setup, and verification steps. The public example seed is not a deployment setup
 
 ## Agent MCP (single principal)
 
-An internal [persisted principal-session foundation](docs/PRINCIPAL_SESSIONS.md)
-is available for #18. It does not enable a shared endpoint or change the current
-fixed-principal tools; transport/account integration and live acceptance remain.
+The [persisted principal-session contract](docs/PRINCIPAL_SESSIONS.md)
+is available for #18. Default fixed-principal tools remain compatible.
+Shared HTTP has a separate explicitly configured catalog;
+Studio account integration, session retention and live acceptance remain.
 
 Run `flamoris-agent-mcp` for stdio MCP, using the same environment/runtime
 identities as the console. Local tools are `health` and `ask`; Hub may later
