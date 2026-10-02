@@ -31,9 +31,15 @@ def database():
             END IF;
             END $$;
         """)
-        conn.execute("GRANT CREATE ON DATABASE agent_test TO flamoris_ai_owner")
+        conn.execute("ALTER DATABASE agent_test OWNER TO flamoris_ai_owner")
         root = Path(__file__).resolve().parents[1]
-        conn.execute((root / "db/01_schema.sql").read_text())
+        schema = (root / "db/01_schema.sql").read_text()
+        # Only rename the baseline database privilege target for this disposable DB.
+        conn.execute(
+            schema.replace(
+                "GRANT CONNECT ON DATABASE flamoris_ai", "GRANT CONNECT ON DATABASE agent_test"
+            )
+        )
         migration = (root / "db/migrations/002_principal_sessions.sql").read_text()
         conn.execute(migration)
         conn.execute(migration)  # Repeat application must preserve existing grants/bindings.
