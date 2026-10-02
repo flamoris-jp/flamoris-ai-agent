@@ -48,6 +48,9 @@ def database():
         migration = (root / "db/migrations/002_principal_sessions.sql").read_text()
         conn.execute(migration)
         conn.execute(migration)  # Repeat application must preserve existing grants/bindings.
+        retention = (root / "db/migrations/003_principal_retention.sql").read_text()
+        conn.execute(retention)
+        conn.execute(retention)
     return DSN
 
 
@@ -327,3 +330,225 @@ def test_availability_database_probe_is_read_only_and_checks_current_identity(au
         conn.execute("UPDATE core.principal_grants SET enabled=FALSE")
     with pytest.raises(IntelligenceError, match="principal_unavailable"):
         probe._database(bound, ModelIdentity("llama.cpp", "served-alias"))
+
+
+def expired_binding(conn, ids, *, recent=False):
+    human, _, agent, project = ids
+    session_id = uuid4()
+    age = "45 minutes" if recent else "2 hours"
+    conn.execute(
+        "INSERT INTO chat.principal_sessions "
+        "(id, delegator_key, human_id, agent_id, project_id, created_at, expires_at) "
+        "VALUES (%s, 'backend', %s, %s, %s, "
+        f"now()-interval '{age}'-interval '15 minutes', now()-interval '{age}')",
+        (session_id, human, agent, project),
+    )
+    return session_id
+
+
+def historical_conversation(
+    conn, session_id, ids, *, status="closed", ended="90 minutes", conversation_id=None
+):
+    human, _, agent, project = ids
+    conversation_id = conversation_id or uuid4()
+    conn.execute(
+        "INSERT INTO chat.conversations "
+        "(id, project_id, primary_agent_id, status, created_at, ended_at, "
+        "system_context, metadata) "
+        "VALUES (%s, %s, %s, %s, now()-interval '2 hours', "
+        "CASE WHEN %s::text IS NULL THEN NULL ELSE now()-%s::interval END, %s, %s)",
+        (
+            conversation_id,
+            project,
+            agent,
+            status,
+            ended,
+            ended,
+            Jsonb({"untrusted_studio_context": "retained fixture"}),
+            Jsonb(
+                {
+                    "client": "agent-mcp",
+                    "scope": scope_id(
+                        {"human_id": human, "agent_id": agent, "project_id": project}
+                    ),
+                    "principal_session": str(session_id),
+                }
+            ),
+        ),
+    )
+    participant = conn.execute(
+        "INSERT INTO chat.participants(conversation_id, human_id, display_name) "
+        "VALUES (%s, %s, 'First') RETURNING id",
+        (conversation_id, human),
+    ).fetchone()[0]
+    conn.execute(
+        "INSERT INTO chat.messages(conversation_id, sender_participant_id, role, content) "
+        "VALUES (%s, %s, 'user', 'retained fixture message')",
+        (conversation_id, participant),
+    )
+    return conversation_id
+
+
+@pytest.mark.parametrize(
+    "status,ended",
+    [("open", None), ("closed", None), ("unknown", "90 minutes"), ("closed", "30 minutes")],
+)
+def test_retention_blocks_unfinished_unknown_and_recent_history(authorization, status, ended):
+    _, dsn, ids = authorization
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        session_id = expired_binding(conn, ids)
+        historical_conversation(conn, session_id, ids, status=status, ended=ended)
+        assert conn.execute("SELECT chat.retire_principal_sessions(128)").fetchone() == (0,)
+        with pytest.raises(psycopg.errors.RaiseException, match="retention blocked"):
+            conn.execute("DELETE FROM chat.principal_sessions WHERE id=%s", (session_id,))
+        assert conn.execute("SELECT count(*) FROM chat.principal_sessions").fetchone() == (1,)
+
+
+def test_retirement_preserves_history_provenance_and_duplicate_fence(authorization):
+    sessions, dsn, ids = authorization
+    keys = PrincipalKeys("first", "helper", "project")
+    current = sessions.open("backend", keys)
+    req_id = uuid4()
+    captured, _ = scoped_store_open(sessions, current, request_id=req_id)
+    conversation_id = captured.request_conversation
+    captured.close()
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        old_id = expired_binding(conn, ids)
+        historical_conversation(conn, old_id, ids, conversation_id=conversation_id)
+        before = conn.execute(
+            "SELECT * FROM chat.conversations WHERE id=%s", (conversation_id,)
+        ).fetchone()
+        messages = conn.execute(
+            "SELECT * FROM chat.messages WHERE conversation_id=%s", (conversation_id,)
+        ).fetchall()
+        assert conn.execute("SELECT chat.retire_principal_sessions(32)").fetchone() == (1,)
+        assert (
+            conn.execute(
+                "SELECT * FROM chat.conversations WHERE id=%s", (conversation_id,)
+            ).fetchone()
+            == before
+        )
+        assert (
+            conn.execute(
+                "SELECT * FROM chat.messages WHERE conversation_id=%s", (conversation_id,)
+            ).fetchall()
+            == messages
+        )
+        with pytest.raises(psycopg.errors.RaiseException, match="cannot be reused"):
+            conn.execute(
+                "INSERT INTO chat.principal_sessions "
+                "(id, delegator_key, human_id, agent_id, project_id, expires_at) "
+                "VALUES (%s, 'backend', %s, %s, %s, now()+interval '15 minutes')",
+                (old_id, ids[0], ids[2], ids[3]),
+            )
+    with pytest.raises(IntelligenceError, match="principal_unavailable"):
+        sessions.require("backend", old_id)
+    again = sessions.open("backend", keys)
+    with pytest.raises(IntelligenceError, match="duplicate_request"):
+        scoped_store_open(sessions, again, request_id=req_id)
+    with pytest.raises(IntelligenceError, match="conversation_unavailable"):
+        scoped_store_open(sessions, again, parent=conversation_id)
+
+
+def test_retention_is_owner_only_and_batch_bounded(authorization):
+    sessions, dsn, ids = authorization
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        for _ in range(32):
+            expired_binding(conn, ids)
+        for batch in (None, 0, -1, 129):
+            with pytest.raises(psycopg.errors.RaiseException, match="invalid principal"):
+                conn.execute("SELECT chat.retire_principal_sessions(%s)", (batch,))
+    with pytest.raises(IntelligenceError, match="principal_capacity"):
+        sessions.open("backend", PrincipalKeys("first", "helper", "project"))
+    with sessions.connection_factory() as conn:
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("SELECT chat.retire_principal_sessions(32)")
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("DELETE FROM chat.principal_sessions")
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        conn.execute("SET ROLE flamoris_ai_owner")
+        assert conn.execute("SELECT chat.retire_principal_sessions(2)").fetchone() == (2,)
+        assert conn.execute("SELECT count(*) FROM chat.principal_sessions").fetchone() == (30,)
+    bound = sessions.open("backend", PrincipalKeys("first", "helper", "project"))
+    assert sessions.require("backend", bound.session_id) == bound
+
+
+def test_retention_excludes_live_grace_and_locked_binding_without_waiting(authorization):
+    sessions, dsn, ids = authorization
+    bound = sessions.open("backend", PrincipalKeys("first", "helper", "project"))
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        recent = expired_binding(conn, ids, recent=True)
+        old_id = expired_binding(conn, ids)
+        for retained in (bound.session_id, recent):
+            with pytest.raises(psycopg.errors.RaiseException, match="retention blocked"):
+                conn.execute("DELETE FROM chat.principal_sessions WHERE id=%s", (retained,))
+        with psycopg.connect(dsn) as locked:
+            locked.execute(
+                "SELECT id FROM chat.principal_sessions WHERE id=%s FOR SHARE", (old_id,)
+            )
+            conn.execute("SET statement_timeout='2s'")
+            assert conn.execute("SELECT chat.retire_principal_sessions(128)").fetchone() == (0,)
+        assert conn.execute("SELECT chat.retire_principal_sessions(128)").fetchone() == (1,)
+        assert conn.execute("SELECT count(*) FROM chat.principal_sessions").fetchone() == (2,)
+
+
+def test_retention_refuses_busy_namespace_instead_of_blocking(authorization):
+    _, dsn, ids = authorization
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        expired_binding(conn, ids)
+        with psycopg.connect(dsn) as locked:
+            locked.execute("SELECT pg_advisory_xact_lock(1179402567, 18)")
+            conn.execute("SET statement_timeout='2s'")
+            with pytest.raises(psycopg.errors.RaiseException, match="namespace busy"):
+                conn.execute("SELECT chat.retire_principal_sessions(32)")
+        assert conn.execute("SELECT chat.retire_principal_sessions(32)").fetchone() == (1,)
+
+
+@pytest.mark.parametrize(
+    "left,ended",
+    [
+        (None, None),
+        ("90 minutes", None),
+        ("30 minutes", "90 minutes"),
+        ("90 minutes", "30 minutes"),
+    ],
+)
+def test_retention_requires_closed_old_runtime_sessions(authorization, left, ended):
+    _, dsn, ids = authorization
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        old_id = expired_binding(conn, ids)
+        conversation = historical_conversation(conn, old_id, ids)
+        key = str(uuid4())
+        host = conn.execute(
+            "INSERT INTO runtime.hosts(host_key, display_name) VALUES (%s, 'Fixture') RETURNING id",
+            (key,),
+        ).fetchone()[0]
+        app = conn.execute(
+            "INSERT INTO runtime.applications(application_key, name) "
+            "VALUES (%s, 'Fixture') RETURNING id",
+            (key,),
+        ).fetchone()[0]
+        instance = conn.execute(
+            "INSERT INTO runtime.instances(host_id, application_id, started_at, ended_at) "
+            "VALUES (%s, %s, now()-interval '2 hours', "
+            "CASE WHEN %s::text IS NULL THEN NULL ELSE now()-%s::interval END) RETURNING id",
+            (host, app, ended, ended),
+        ).fetchone()[0]
+        conn.execute(
+            "INSERT INTO chat.conversation_sessions "
+            "(conversation_id, instance_id, joined_at, left_at) "
+            "VALUES (%s, %s, now()-interval '2 hours', "
+            "CASE WHEN %s::text IS NULL THEN NULL ELSE now()-%s::interval END)",
+            (conversation, instance, left, left),
+        )
+        assert conn.execute("SELECT chat.retire_principal_sessions(32)").fetchone() == (0,)
+        conn.execute(
+            "UPDATE runtime.instances SET ended_at=now()-interval '90 minutes' WHERE id=%s",
+            (instance,),
+        )
+        conn.execute(
+            "UPDATE chat.conversation_sessions SET left_at=now()-interval '90 minutes' "
+            "WHERE instance_id=%s",
+            (instance,),
+        )
+        assert conn.execute("SELECT chat.retire_principal_sessions(32)").fetchone() == (1,)

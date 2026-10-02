@@ -100,5 +100,7 @@ combined final budget, explicit direct-mode refusal, authorized fresh availabili
 unknown/offline/configuration failure, revocation during probing, competing probes,
 cancellation and no inference/lifecycle writes. Existing PostgreSQL isolation and
 package/wheel/container gates still apply. No production two-user acceptance is
-implied. Studio mapping/UI, bounded session retention, remote export, proposals,
+implied. Studio mapping/UI, operator retention configuration, remote export, proposals,
 additional media contexts and deployment acceptance remain open.
+The bounded owner-only binding retirement implementation is specified in
+[PRINCIPAL_RETENTION.md](PRINCIPAL_RETENTION.md); it is not transcript deletion.

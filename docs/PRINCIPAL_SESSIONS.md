@@ -2,8 +2,8 @@
 
 Owning issue: [#18](https://github.com/flamoris-jp/flamoris-ai-agent/issues/18).
 Existing fixed-principal `health`/`ask`, console and Intelligence execution remain
-compatible. Shared HTTP is explicitly opt-in; Studio account mappings, retention
-operations and deployment acceptance remain separate gates.
+compatible. Shared HTTP is explicitly opt-in; Studio account mappings, operator
+retention configuration and deployment acceptance remain separate gates.
 
 ## Authenticated HTTP catalog
 
@@ -92,8 +92,13 @@ At most 128 bindings globally and 32 per delegator are retained, including expir
 or revoked records. Publication serializes counts in PostgreSQL and refuses full
 storage; it never evicts history or bindings potentially referenced by uncertain
 requests. There is intentionally no automatic GC or refresh in this slice.
-Reference-aware operator/session retention is a remaining shared-service gate,
-not permission to delete conversation state or reset duplicate fences.
+Migration 003 supplies an explicit bounded schema-owner retirement operation:
+only expired bindings beyond one-hour grace with closed/old referencing lifecycles
+can be removed. Historical conversations/provenance and request fences remain;
+historical session UUID reuse is refused. It runs neither automatically nor from
+the public MCP catalog. See [PRINCIPAL_RETENTION.md](PRINCIPAL_RETENTION.md) for
+permissions, concurrency guards and the operator procedure. Maintenance cadence
+and actual lifecycle acceptance remain deployment gates.
 
 ## Acceptance
 
@@ -112,5 +117,5 @@ Set `TEST_AGENT_DATABASE_URL` only to the disposable `agent_test` database
 to run those tests locally. They do not use live Agent data, GPU or paid inference.
 
 Remaining #18 slices: explicit Studio-account delegation mapping;
-session retention and deployed
+operator retention configuration and deployed
 two-principal acceptance. #24 context/availability integration follows those gates.

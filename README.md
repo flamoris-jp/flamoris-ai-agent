@@ -69,7 +69,10 @@ setup, and verification steps. The public example seed is not a deployment setup
 The [persisted principal-session contract](docs/PRINCIPAL_SESSIONS.md)
 is available for #18. Default fixed-principal tools remain compatible.
 Shared HTTP has a separate explicitly configured catalog;
-Studio account integration, session retention and live acceptance remain.
+Studio account integration, operator retention configuration and live acceptance remain.
+An [explicit bounded owner retirement operation](docs/PRINCIPAL_RETENTION.md)
+preserves conversation history and request fences while retiring eligible expired
+authorization bindings; it is not automatically enabled.
 
 The [approved Intelligence MCP adapter](docs/INTELLIGENCE_MCP.md) is explicitly
 configurable for local-only bounded execution. Default direct execution stays
