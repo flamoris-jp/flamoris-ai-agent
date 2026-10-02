@@ -174,3 +174,25 @@ def test_history_is_bounded():
         await s.aclose()
 
     asyncio.run(run())
+
+
+async def test_turn_reserves_admission_before_awaiting_client_validation():
+    agent = session()
+    await agent.start()
+    validating = asyncio.Event()
+
+    async def validate(_):
+        validating.set()
+        await asyncio.Event().wait()
+
+    agent.client.validate.side_effect = validate
+    first = asyncio.create_task(agent.ask("first"))
+    await asyncio.wait_for(validating.wait(), 1)
+    with pytest.raises(IntelligenceError, match="busy"):
+        await agent.ask("second")
+    first.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await first
+    agent.store.save.assert_not_called()
+    assert agent.busy is False
+    await agent.aclose()

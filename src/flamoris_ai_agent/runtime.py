@@ -138,9 +138,9 @@ class AgentSession:
         messages = prompts.build_messages(self.policy, history, self.previous_text)
         validate_messages(messages)
         execution = ExecutionRequest(self.identity, messages)
-        await self.client.validate(execution)
         self.busy = True
         try:
+            await self.client.validate(execution)
             self._save("user", text, metadata or {})
             self.history = history[-min(max(prompts.MAX_CONTEXT_MESSAGES, 1), 64) :]
             result = await self.client.execute(execution)
