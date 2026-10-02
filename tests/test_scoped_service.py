@@ -80,7 +80,12 @@ async def test_http_binding_two_principals_preserves_separate_sessions_and_catal
     service = ScopedAgentService(principals, factory)
     async with shared_http(service) as client:
         tools = (await client.list_tools()).tools
-        assert {t.name for t in tools} == {"health", "sessions.open", "ask_scoped"}
+        assert {t.name for t in tools} == {
+            "health",
+            "sessions.open",
+            "ask_scoped",
+            "ask_availability",
+        }
         for name in ("first", "second"):
             result = await client.call_tool(
                 "sessions.open",

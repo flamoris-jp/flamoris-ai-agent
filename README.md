@@ -74,6 +74,7 @@ Studio account integration, session retention and live acceptance remain.
 The [approved Intelligence MCP adapter](docs/INTELLIGENCE_MCP.md) is explicitly
 configurable for local-only bounded execution. Default direct execution stays
 compatible; no automatic fallback or remote transcript export is added.
+Shared HTTP additionally supports [bounded Image context and scoped ask availability](docs/STUDIO_CONTEXT_V1.md).
 
 Run `flamoris-agent-mcp` for stdio MCP, using the same environment/runtime
 identities as the console. Local tools are `health` and `ask`; Hub may later

@@ -15,6 +15,7 @@ from flamoris_ai_agent.execution import (
     validate_messages,
 )
 from flamoris_ai_agent.intelligence import IntelligenceClient
+from flamoris_ai_agent.studio_context import StudioContext
 
 
 class PostgresStore:
@@ -79,10 +80,21 @@ class PostgresStore:
 
 class AgentSession:
     def __init__(
-        self, client: ExecutionClient, store, *, context_loader=prompts.load_system_context
+        self,
+        client: ExecutionClient,
+        store,
+        *,
+        context_loader=prompts.load_system_context,
+        context: StudioContext | None = None,
     ):
         self.client, self.store = client, store
         self.context_loader = context_loader
+        if context is not None and not isinstance(context, StudioContext):
+            raise IntelligenceError("invalid_input")
+        # Snapshot now: nested list mutation outside this session cannot alter
+        # the admitted prompt or its durable request context after uncertainty.
+        self.context_text = context.serialized() if context else None
+        self.context_data = json.loads(self.context_text)["context"] if context else None
         self.history = []
         self.started = False
         self.failed = False
@@ -101,16 +113,16 @@ class AgentSession:
             self.previous = self.store.open(self.identity, load_previous)
             self.previous_text = prompts.format_previous_conversation(self.previous)
             self.policy = prompts.build_system_prompt(context)
-            validate_messages(prompts.build_messages(self.policy, [], self.previous_text))
-            await self.client.validate(
-                ExecutionRequest(
-                    self.identity, prompts.build_messages(self.policy, [], self.previous_text)
-                )
-            )
+            validate_messages(self._messages([]))
+            await self.client.validate(ExecutionRequest(self.identity, self._messages([])))
             self.conversation_id, self.instance_id = self.store.start(
                 self.policy,
                 prompts.json_safe(
-                    {"agent_sections": context, "previous_conversation": self.previous}
+                    {
+                        "agent_sections": context,
+                        "previous_conversation": self.previous,
+                        **({"studio_context": self.context_data} if self.context_data else {}),
+                    }
                 ),
             )
             self.started = True
@@ -135,7 +147,7 @@ class AgentSession:
         if not isinstance(text, str) or not text.strip() or len(text.encode()) > MAX_USER_BYTES:
             raise IntelligenceError("invalid_input")
         history = [*self.history, {"role": "user", "content": text}]
-        messages = prompts.build_messages(self.policy, history, self.previous_text)
+        messages = self._messages(history)
         validate_messages(messages)
         execution = ExecutionRequest(self.identity, messages)
         self.busy = True
@@ -174,6 +186,9 @@ class AgentSession:
         finally:
             self.busy = False
 
+    def _messages(self, history):
+        return prompts.build_messages(self.policy, history, self.previous_text, self.context_text)
+
     def _save(self, role, text, metadata):
         try:
             self.store.save(role, text, metadata)
@@ -194,8 +209,10 @@ class AgentSession:
             await self.client.aclose()
 
 
-def configured_session(*, store=None, context_loader=prompts.load_system_context):
+def configured_session(*, store=None, context_loader=prompts.load_system_context, context=None):
     mode = os.getenv("AGENT_INTELLIGENCE_TRANSPORT", "direct")
+    if context is not None and mode != "mcp":
+        raise IntelligenceError("context_unavailable")
     if mode == "mcp":
         from flamoris_ai_agent.intelligence_mcp import ApprovedTarget, IntelligenceMCPClient
 
@@ -217,4 +234,5 @@ def configured_session(*, store=None, context_loader=prompts.load_system_context
         client,
         store if store is not None else PostgresStore(),
         context_loader=context_loader,
+        context=context,
     )

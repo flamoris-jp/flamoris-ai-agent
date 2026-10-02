@@ -9,7 +9,8 @@ import psycopg
 import pytest
 from psycopg.types.json import Jsonb
 
-from flamoris_ai_agent.execution import IntelligenceError
+from flamoris_ai_agent.availability import AvailabilityProbe
+from flamoris_ai_agent.execution import IntelligenceError, ModelIdentity
 from flamoris_ai_agent.mcp_service import AskRequest
 from flamoris_ai_agent.mcp_store import MCPStore, scope_id
 from flamoris_ai_agent.principals import PrincipalKeys, PrincipalSessions
@@ -298,3 +299,31 @@ def test_request_duplicate_fence_survives_new_session_but_isolates_other_human(a
         assert other.request_conversation != conversation
     finally:
         other.close()
+
+
+def test_availability_database_probe_is_read_only_and_checks_current_identity(authorization):
+    sessions, dsn, _ = authorization
+    bound = sessions.open("backend", PrincipalKeys("first", "helper", "project"))
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        model = conn.execute(
+            "INSERT INTO runtime.models(model_key, provider, model_name) "
+            "VALUES (%s, 'llama.cpp', 'served-alias') RETURNING id",
+            (str(uuid4()),),
+        ).fetchone()[0]
+    refs = {**bound.ids, "model_id": model}
+    probe = AvailabilityProbe(sessions)
+    with patch("flamoris_ai_agent.db.load_runtime_refs", return_value=refs):
+        probe._database(bound, ModelIdentity("llama.cpp", "served-alias"))
+        with pytest.raises(RuntimeError, match="Model identity mismatch"):
+            probe._database(bound, ModelIdentity("other", "served-alias"))
+    with patch(
+        "flamoris_ai_agent.db.load_runtime_refs", return_value={**refs, "human_id": uuid4()}
+    ):
+        with pytest.raises(IntelligenceError, match="principal_unavailable"):
+            probe._database(bound, ModelIdentity("llama.cpp", "served-alias"))
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        assert conn.execute("SELECT count(*) FROM chat.conversations").fetchone()[0] == 0
+        assert conn.execute("SELECT count(*) FROM runtime.instances").fetchone()[0] == 0
+        conn.execute("UPDATE core.principal_grants SET enabled=FALSE")
+    with pytest.raises(IntelligenceError, match="principal_unavailable"):
+        probe._database(bound, ModelIdentity("llama.cpp", "served-alias"))

@@ -98,7 +98,10 @@ partial/empty/oversized/malformed results, no replay, cancellation/cleanup, tran
 limits/redirects/compression and SDK log privacy. Existing PostgreSQL isolation,
 package/wheel/container gates remain required. No real provider smoke is implied.
 
-Remaining #24 work: versioned Studio context envelope, complete classified remote
-export policy/targets, Agent-owned scoped fresh availability, Studio account mapping
+The optional Image context and scoped read-only prerequisite availability contract
+are specified in [STUDIO_CONTEXT_V1.md](STUDIO_CONTEXT_V1.md).
+
+Remaining #24 work: complete classified remote
+export policy/targets, Studio account mapping
 and two-principal/live Intelligence acceptance. Shared Studio assistance remains
 disabled until those owning gates are met.
