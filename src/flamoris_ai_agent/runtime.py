@@ -1,6 +1,7 @@
 """Shared conversation lifecycle. The CLI and MCP do not own separate state."""
 
 import asyncio
+import json
 import os
 
 from flamoris_ai_agent import db, prompts
@@ -101,6 +102,11 @@ class AgentSession:
             self.previous_text = prompts.format_previous_conversation(self.previous)
             self.policy = prompts.build_system_prompt(context)
             validate_messages(prompts.build_messages(self.policy, [], self.previous_text))
+            await self.client.validate(
+                ExecutionRequest(
+                    self.identity, prompts.build_messages(self.policy, [], self.previous_text)
+                )
+            )
             self.conversation_id, self.instance_id = self.store.start(
                 self.policy,
                 prompts.json_safe(
@@ -131,11 +137,13 @@ class AgentSession:
         history = [*self.history, {"role": "user", "content": text}]
         messages = prompts.build_messages(self.policy, history, self.previous_text)
         validate_messages(messages)
+        execution = ExecutionRequest(self.identity, messages)
+        await self.client.validate(execution)
         self.busy = True
         try:
             self._save("user", text, metadata or {})
             self.history = history[-min(max(prompts.MAX_CONTEXT_MESSAGES, 1), 64) :]
-            result = await self.client.execute(ExecutionRequest(self.identity, messages))
+            result = await self.client.execute(execution)
             if result.identity != self.identity:
                 raise IntelligenceError("model_mismatch")
             if not isinstance(result.text, str) or not result.text.strip():
@@ -149,6 +157,15 @@ class AgentSession:
                     **(metadata or {}),
                     "intelligence_model": result.identity.model,
                     "intelligence_provider": result.identity.provider,
+                    **(
+                        {
+                            "intelligence_public_model": result.public_identity.model,
+                            "intelligence_public_provider": result.public_identity.provider,
+                            "intelligence_execution_id": result.execution_id,
+                        }
+                        if result.public_identity
+                        else {}
+                    ),
                 },
             )
             self.history.append({"role": "assistant", "content": result.text})
@@ -178,11 +195,26 @@ class AgentSession:
 
 
 def configured_session(*, store=None, context_loader=prompts.load_system_context):
-    return AgentSession(
-        IntelligenceClient(
+    mode = os.getenv("AGENT_INTELLIGENCE_TRANSPORT", "direct")
+    if mode == "mcp":
+        from flamoris_ai_agent.intelligence_mcp import ApprovedTarget, IntelligenceMCPClient
+
+        try:
+            target = ApprovedTarget.model_validate(
+                json.loads(os.environ["AGENT_INTELLIGENCE_TARGET"])
+            )
+            client = IntelligenceMCPClient(os.environ["AGENT_INTELLIGENCE_MCP_ENDPOINT"], target)
+        except (ValueError, TypeError, KeyError):
+            raise IntelligenceError("invalid_intelligence_configuration") from None
+    elif mode == "direct":
+        client = IntelligenceClient(
             os.getenv("INTELLIGENCE_BASE_URL", "http://127.0.0.1:8081"),
             os.getenv("INTELLIGENCE_MODEL"),
-        ),
+        )
+    else:
+        raise IntelligenceError("invalid_intelligence_configuration")
+    return AgentSession(
+        client,
         store if store is not None else PostgresStore(),
         context_loader=context_loader,
     )
