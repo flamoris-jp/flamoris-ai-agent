@@ -53,6 +53,9 @@ class AgentService:
             request = AskRequest.model_validate(raw)
         except (ValidationError, ValueError, TypeError):
             return {"ok": False, "error": {"code": "invalid_input"}}
+        return await self._run(request, self.session_factory)
+
+    async def _run(self, request, factory):
         if self.closing:
             return {"ok": False, "error": {"code": "shutting_down"}}
         if self.active is not None:
@@ -61,7 +64,7 @@ class AgentService:
         session = None
         response = None
         try:
-            session = self.session_factory(request)
+            session = factory(request)
             await session.start(load_previous=False)
             result = await session.ask(request.text, metadata={"request_id": request.request_id})
             response = {

@@ -1,4 +1,4 @@
-"""Private single-principal HTTP boundary; service credential is not end-user auth."""
+"""Private authenticated HTTP boundary; service credential is not end-user auth."""
 
 import hmac
 import os
@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from mcp.server.transport_security import TransportSecuritySettings
 from starlette.responses import JSONResponse, Response
 
+from flamoris_ai_agent.delegation import authenticated_delegator
 from flamoris_ai_agent.server import create_server
 
 
@@ -17,6 +18,7 @@ class HTTPSettings:
     host: str = "127.0.0.1"
     port: int = 8768
     allowed_hosts: tuple[str, ...] = ("localhost:8768", "127.0.0.1:8768", "[::1]:8768")
+    delegator_key: str | None = None
 
     def __post_init__(self):
         if (
@@ -35,6 +37,11 @@ class HTTPSettings:
             for h in self.allowed_hosts
         ):
             raise ValueError("invalid_http_hosts")
+        if self.delegator_key is not None and (
+            type(self.delegator_key) is not str
+            or not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", self.delegator_key)
+        ):
+            raise ValueError("invalid_http_delegator")
 
     @classmethod
     def from_env(cls):
@@ -48,6 +55,7 @@ class HTTPSettings:
                 os.getenv("AGENT_HTTP_HOST", "127.0.0.1"),
                 port,
                 tuple(h.strip() for h in hosts.split(",")),
+                os.getenv("AGENT_HTTP_DELEGATOR_KEY") or None,
             )
         except (ValueError, TypeError):
             raise ValueError("invalid_http_configuration") from None
@@ -77,10 +85,22 @@ class ServiceAuth:
             return await Response("Browser access forbidden", status_code=403)(scope, receive, send)
         if any(k.lower() == b"content-encoding" for k, v in headers):
             return await Response("Encoded body forbidden", status_code=415)(scope, receive, send)
-        return await self.app(scope, receive, send)
+        caller = authenticated_delegator.set(self.settings.delegator_key)
+        try:
+            return await self.app(scope, receive, send)
+        finally:
+            authenticated_delegator.reset(caller)
 
 
 def create_http_app(settings, service=None):
+    if settings.delegator_key is not None and service is None:
+        from flamoris_ai_agent.scoped_service import ScopedAgentService
+
+        service = ScopedAgentService()
+    if service is not None and bool(getattr(service, "shared_principals", False)) != (
+        settings.delegator_key is not None
+    ):
+        raise ValueError("invalid_principal_transport")
     server = create_server(service)
     app = server.streamable_http_app(
         streamable_http_path="/mcp",

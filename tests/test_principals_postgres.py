@@ -2,12 +2,16 @@
 
 import os
 from pathlib import Path
+from unittest.mock import patch
 from uuid import uuid4
 
 import psycopg
 import pytest
+from psycopg.types.json import Jsonb
 
 from flamoris_ai_agent.execution import IntelligenceError
+from flamoris_ai_agent.mcp_service import AskRequest
+from flamoris_ai_agent.mcp_store import MCPStore, scope_id
 from flamoris_ai_agent.principals import PrincipalKeys, PrincipalSessions
 
 DSN = os.getenv("TEST_AGENT_DATABASE_URL")
@@ -188,3 +192,109 @@ def test_capacity_refuses_new_binding_without_evicting_history(authorization):
     assert sessions.require("backend", first.session_id) == first
     with psycopg.connect(dsn) as conn:
         assert conn.execute("SELECT count(*) FROM chat.principal_sessions").fetchone() == (32,)
+
+
+def scoped_store_open(sessions, bound, parent=None, request_id=None):
+    req = AskRequest(
+        request_id=str(request_id or uuid4()),
+        text="hello",
+        previous_conversation_id=str(parent) if parent else None,
+    )
+    store = MCPStore(req, binding=bound, principals=sessions)
+    refs = {**bound.ids, "model_id": uuid4()}
+    with (
+        patch("flamoris_ai_agent.db.get_connection", sessions.connection_factory),
+        patch("flamoris_ai_agent.db.load_runtime_refs", return_value=refs),
+        patch("flamoris_ai_agent.db.validate_model_ref"),
+    ):
+        try:
+            previous = store.open(
+                type("Identity", (), {"model": "fixture", "provider": "fixture"})()
+            )
+            return store, previous
+        except BaseException:
+            store.close()
+            raise
+
+
+def test_real_parent_query_isolates_human_session_and_legacy_history(authorization):
+    sessions, dsn, _ = authorization
+    first = sessions.open("backend", PrincipalKeys("first", "helper", "project"))
+    second = sessions.open("backend", PrincipalKeys("second", "helper", "project"))
+    same_human_new_session = sessions.open("backend", first.keys)
+    parent = uuid4()
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        conn.execute(
+            "INSERT INTO chat.conversations"
+            "(id, project_id, primary_agent_id, status, ended_at, metadata) "
+            "VALUES (%s, %s, %s, 'closed', now(), %s)",
+            (
+                parent,
+                first.project_id,
+                first.agent_id,
+                Jsonb(
+                    {
+                        "client": "agent-mcp",
+                        "scope": scope_id(first.ids),
+                        "principal_session": str(first.session_id),
+                    }
+                ),
+            ),
+        )
+        conn.execute(
+            "INSERT INTO chat.participants(conversation_id, human_id, display_name) "
+            "VALUES (%s, %s, 'First')",
+            (parent, first.human_id),
+        )
+        conn.execute(
+            "INSERT INTO chat.participants(conversation_id, agent_id, display_name) "
+            "VALUES (%s, %s, 'Helper')",
+            (parent, first.agent_id),
+        )
+    store, previous = scoped_store_open(sessions, first, parent)
+    try:
+        assert previous["conversation_id"] == parent
+    finally:
+        store.close()
+    for bound in (second, same_human_new_session):
+        with pytest.raises(IntelligenceError, match="conversation_unavailable"):
+            scoped_store_open(sessions, bound, parent)
+    legacy = MCPStore(
+        AskRequest(request_id=str(uuid4()), text="hello", previous_conversation_id=str(parent))
+    )
+    with (
+        patch("flamoris_ai_agent.db.get_connection", sessions.connection_factory),
+        patch(
+            "flamoris_ai_agent.db.load_runtime_refs",
+            return_value={**first.ids, "model_id": uuid4()},
+        ),
+        patch("flamoris_ai_agent.db.validate_model_ref"),
+    ):
+        try:
+            with pytest.raises(IntelligenceError, match="conversation_unavailable"):
+                legacy.open(type("Identity", (), {"model": "fixture", "provider": "fixture"})())
+        finally:
+            legacy.close()
+
+
+def test_request_duplicate_fence_survives_new_session_but_isolates_other_human(authorization):
+    sessions, dsn, _ = authorization
+    first = sessions.open("backend", PrincipalKeys("first", "helper", "project"))
+    req_id = uuid4()
+    captured, _ = scoped_store_open(sessions, first, request_id=req_id)
+    conversation = captured.request_conversation
+    captured.close()
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        conn.execute(
+            "INSERT INTO chat.conversations(id, project_id, primary_agent_id) VALUES (%s, %s, %s)",
+            (conversation, first.project_id, first.agent_id),
+        )
+    again = sessions.open("backend", first.keys)
+    with pytest.raises(IntelligenceError, match="duplicate_request"):
+        scoped_store_open(sessions, again, request_id=req_id)
+    second = sessions.open("backend", PrincipalKeys("second", "helper", "project"))
+    other, _ = scoped_store_open(sessions, second, request_id=req_id)
+    try:
+        assert other.request_conversation != conversation
+    finally:
+        other.close()

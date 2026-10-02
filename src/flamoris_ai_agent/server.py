@@ -10,8 +10,11 @@ from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import Field
 
 from flamoris_ai_agent.mcp_service import AgentService, AskRequest
+from flamoris_ai_agent.scoped_service import OpenSessionRequest, ScopedAskRequest
 
 RequestArgument = Annotated[Any, Field(json_schema_extra=AskRequest.model_json_schema())]
+SessionArgument = Annotated[Any, Field(json_schema_extra=OpenSessionRequest.model_json_schema())]
+ScopedArgument = Annotated[Any, Field(json_schema_extra=ScopedAskRequest.model_json_schema())]
 
 
 def tool_result(data):
@@ -46,6 +49,36 @@ def create_server(service=None):
     async def health() -> CallToolResult:
         """Process liveness and admission state; dependency readiness is not inferred."""
         return tool_result(service.health())
+
+    if getattr(service, "shared_principals", False):
+
+        @server.tool(
+            name="sessions.open",
+            annotations=ToolAnnotations(
+                read_only_hint=False,
+                destructive_hint=False,
+                idempotent_hint=False,
+                open_world_hint=False,
+            ),
+        )
+        async def open_session(request: SessionArgument = None) -> CallToolResult:
+            """Resolve permitted principal keys under the authenticated transport delegator."""
+            return tool_result(await service.open_session(request))
+
+        @server.tool(
+            name="ask_scoped",
+            annotations=ToolAnnotations(
+                read_only_hint=False,
+                destructive_hint=False,
+                idempotent_hint=False,
+                open_world_hint=True,
+            ),
+        )
+        async def ask_scoped(request: ScopedArgument = None) -> CallToolResult:
+            """One bounded turn under an immutable authorized principal session; never replay."""
+            return tool_result(await service.ask_scoped(request))
+
+        return server
 
     @server.tool(
         name="ask",

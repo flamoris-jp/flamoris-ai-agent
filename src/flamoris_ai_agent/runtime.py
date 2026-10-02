@@ -177,11 +177,12 @@ class AgentSession:
             await self.client.aclose()
 
 
-def configured_session(*, store=None):
+def configured_session(*, store=None, context_loader=prompts.load_system_context):
     return AgentSession(
         IntelligenceClient(
             os.getenv("INTELLIGENCE_BASE_URL", "http://127.0.0.1:8081"),
             os.getenv("INTELLIGENCE_MODEL"),
         ),
         store if store is not None else PostgresStore(),
+        context_loader=context_loader,
     )

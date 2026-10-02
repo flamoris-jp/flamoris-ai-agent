@@ -8,8 +8,10 @@ activation, Hub configuration or production deployment is performed.
 
 - HTTP is a private service-to-service endpoint, not a public OAuth MCP service.
   Every MCP request requires one operator-configured bearer credential. Its scope
-  is the fixed human/Agent/project configured in this instance. Never share one
-  instance/token among unrelated users or tenants.
+  is the fixed human/Agent/project configured in default mode. Never share that
+  default instance/token among unrelated users or tenants. Explicit shared mode
+  authenticates a trusted delegator and requires operator-controlled exact grants;
+  see [PRINCIPAL_SESSIONS.md](PRINCIPAL_SESSIONS.md) before enabling it.
 - At least 32 ASCII non-whitespace characters are required in AGENT_MCP_TOKEN.
   There is no default credential. Missing/invalid credentials fail startup.
   Rotating it requires restarting the process.
@@ -56,8 +58,9 @@ Never bake .env or private context into the image.
 
 Connect a trusted client to /mcp with Authorization: Bearer <secret>. A future Hub
 config uses local tools health/ask and namespace agent; Hub configuration is a
-separate reviewed change. This token identifies the service's one principal, not
-the identity of each user behind a Hub.
+separate reviewed change. This token authenticates the service caller, not each
+user behind a Hub. Shared mode advertises a different catalog; review parity
+before enabling it and retain Studio's independent account authorization gate.
 
 ## Settings
 
@@ -67,6 +70,7 @@ the identity of each user behind a Hub.
 | AGENT_HTTP_HOST | 127.0.0.1; container overrides to 0.0.0.0 |
 | AGENT_HTTP_PORT | 8768, 1–65535 |
 | AGENT_HTTP_ALLOWED_HOSTS | localhost:8768,127.0.0.1:8768,[::1]:8768 |
+| AGENT_HTTP_DELEGATOR_KEY | unset: fixed catalog; explicit safe caller key selects shared catalog after grants/migration; see PRINCIPAL_SESSIONS.md |
 | FLAMORIS_HUMAN_KEY / AGENT_KEY / PROJECT_KEY | fixed configured principal scope |
 | FLAMORIS_HOST_KEY / APPLICATION_KEY / MODEL_KEY | existing runtime references |
 | PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD | external PostgreSQL |
