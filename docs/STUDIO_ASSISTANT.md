@@ -4,6 +4,12 @@ Status: proposed Agent contract design, 2026-10-02. Coordination: [FLAMORIS AI #
 
 ## Baseline and target boundary
 
+Implementation progress: exact persisted grants and opt-in shared HTTP sessions
+are described in [PRINCIPAL_SESSIONS.md](PRINCIPAL_SESSIONS.md). The approved
+local-only synchronous execution adapter is described in
+[INTELLIGENCE_MCP.md](INTELLIGENCE_MCP.md). These do not activate Studio assistance
+or implement the context/availability/remote-policy gates below.
+
 Main `aadda1bfc85cc734c475eee033227e37150770fa` implements a fixed-principal service. ask takes request_id, text and optional previous_conversation_id, creates one new conversation, closes it and preserves a durable duplicate fence. health reports process liveness/busy with dependencies=not_checked. The current IntelligenceClient is a bounded temporary direct llama.cpp adapter; provider-neutral Intelligence MCP execution is a migration, not already present.
 
 Studio's right-side assistant and standalone Assistant should call Agent, not own model/provider policy themselves. Agent owns identity/personality, persistent conversation, prompt assembly, context policy and allowed intelligence-target selection. Intelligence MCP owns raw execution and provider adapters/configuration/credentials. Hub routes these services without choosing a model. GPU Node Manager owns runtime transitions; assistance does not implicitly wake/switch the GPU.

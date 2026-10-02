@@ -90,9 +90,7 @@ class IntelligenceClient:
         return (await self.resolve()).model
 
     async def execute(self, request: ExecutionRequest) -> ExecutionResult:
-        validate_messages(request.messages)
-        if request.identity.provider != "llama.cpp":
-            raise IntelligenceError("model_mismatch")
+        await self.validate(request)
         payload = await self._request(
             "POST",
             "/v1/chat/completions",
@@ -115,3 +113,8 @@ class IntelligenceClient:
         except (KeyError, IndexError, TypeError, ValueError):
             raise IntelligenceError("invalid_response") from None
         return ExecutionResult(request.identity, text)
+
+    async def validate(self, request: ExecutionRequest):
+        validate_messages(request.messages)
+        if request.identity.provider != "llama.cpp":
+            raise IntelligenceError("model_mismatch")

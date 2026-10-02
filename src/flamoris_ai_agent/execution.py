@@ -28,6 +28,8 @@ class ExecutionRequest:
 class ExecutionResult:
     identity: ModelIdentity
     text: str
+    public_identity: ModelIdentity | None = None
+    execution_id: str | None = None
 
 
 MAX_INPUT_BYTES = 65536
@@ -54,6 +56,8 @@ def validate_messages(messages):
 
 class ExecutionClient(Protocol):
     async def resolve(self) -> ModelIdentity: ...
+
+    async def validate(self, request: ExecutionRequest) -> None: ...
 
     async def execute(self, request: ExecutionRequest) -> ExecutionResult: ...
 

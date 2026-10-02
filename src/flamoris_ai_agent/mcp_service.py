@@ -67,14 +67,16 @@ class AgentService:
             session = factory(request)
             await session.start(load_previous=False)
             result = await session.ask(request.text, metadata={"request_id": request.request_id})
+            public = result.public_identity or result.identity
             response = {
                 "ok": True,
                 "request_id": request.request_id,
                 "conversation_id": str(session.conversation_id),
                 "text": result.text,
                 "provenance": {
-                    "provider": result.identity.provider,
-                    "model": result.identity.model,
+                    "provider": public.provider,
+                    "model": public.model,
+                    **({"execution_id": result.execution_id} if result.execution_id else {}),
                 },
             }
         except IntelligenceError as exc:
