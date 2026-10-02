@@ -15,6 +15,10 @@ and immutable bounded principal sessions for #18. Apply through the established
 schema-owner operations path before future shared-mode activation. It creates no
 authorization grants automatically. See `docs/PRINCIPAL_SESSIONS.md`.
 
+`003_principal_retention.sql` follows 002 and supplies guarded, bounded owner-only
+retirement of expired authorization bindings. It preserves all conversation state
+and request fences; no automatic cleanup is enabled. See `docs/PRINCIPAL_RETENTION.md`.
+
 v0.1ではpgvectorをまだ有効化しない。
 
 Schema変更時は既存の `01_schema.sql` を直接書き換えて運用するのではなく、
