@@ -14,12 +14,12 @@ FLAMORIS
 │  └─ Album
 │     └─ Song
 ├─ MV
-│  └─ Akino 3D
+│  └─ Character 3D
 │     └─ Hair
 └─ AI
-   ├─ Umeko
-   ├─ Misaki
-   └─ George
+   ├─ Agent A
+   ├─ Agent B
+   └─ Agent C
 ```
 
 将来のKnowledge検索では、現在Projectから親へ遡り、
@@ -41,13 +41,13 @@ root知識
 Agent identity:
 
 ```text
-梅子
+Agent A
 ```
 
 Model identity:
 
 ```text
-Ollama / umeko / Qwen2.5 7B
+Ollama / legacy-agent / Qwen2.5 7B
 ```
 
 は別物。
@@ -68,7 +68,7 @@ Host
 
 ```text
 Local Host
-└─ Umeko Chat
+└─ Agent Chat
    ├─ instance A
    └─ instance B
 ```
@@ -94,10 +94,10 @@ Local Host
 `chat.participants` で、
 
 ```text
-愛乃
-梅子
-美祥
-George
+User
+Agent A
+Agent B
+Agent C
 ```
 
 など複数参加者を1会話に登録できる。
@@ -176,15 +176,15 @@ Knowledge/Memory本体とVectorを分離する。
 例:
 
 ```text
-愛乃の入力
+Userの入力
 ↓
 Relay event A
 ↓
-梅子処理 B
+Agent A処理 B
 ↓
 Memory C
 ↓
-美祥へのevent D
+Agent Bへのevent D
 ```
 
 A〜Dを同一correlationで追跡可能にする。

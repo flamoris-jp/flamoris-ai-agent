@@ -52,7 +52,7 @@ The original implementation used:
 
 ```text
 Ollama
-└─ Qwen-based Umeko model
+└─ Qwen-based legacy Agent model
 ```
 
 The first modernization target is:
@@ -95,7 +95,7 @@ POST /v1/chat/completions
 Do not redesign these areas in Phase 0:
 
 - Agent identity
-- Umeko personality and character context
+- Agent personality and character context
 - prompt/context composition
 - PostgreSQL schema
 - conversations
@@ -150,7 +150,7 @@ Exact variable names may be selected during implementation, but they should not 
 Phase 0 is complete when all of the following are confirmed:
 
 1. GPT-OSS is reachable through the configured llama.cpp endpoint.
-2. Umeko starts successfully.
+2. The Agent starts successfully.
 3. A user message receives a GPT-OSS response.
 4. The conversation is written to PostgreSQL.
 5. The runtime instance is recorded.

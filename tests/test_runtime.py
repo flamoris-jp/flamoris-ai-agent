@@ -16,7 +16,7 @@ def session():
     store = Mock()
     store.open.return_value = {
         "conversation_id": "old",
-        "messages": [{"sender": "Akino", "content": "old story"}],
+        "messages": [{"sender": "Example User", "content": "old story"}],
     }
     store.start.return_value = ("conversation", "instance")
     client = AsyncMock()

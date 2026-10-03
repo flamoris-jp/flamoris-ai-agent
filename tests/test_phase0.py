@@ -8,7 +8,7 @@ from flamoris_ai_agent.register_runtime import register
 class ModelProvenanceTests(unittest.TestCase):
     def test_rejects_old_ollama_identity(self):
         conn = Mock()
-        conn.execute.return_value.fetchone.return_value = ("ollama", "umeko")
+        conn.execute.return_value.fetchone.return_value = ("ollama", "legacy-agent")
         with self.assertRaisesRegex(RuntimeError, "register_runtime"):
             db.validate_model_ref(conn, "old-id", "actual-served-id")
 
