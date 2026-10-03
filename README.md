@@ -121,7 +121,7 @@ Future phases may expand or normalize:
 
 Those future capabilities remain Agent-owned design areas; this status does not claim that Memory CRUD, general tools, or durable cross-service orchestration are implemented today.
 
-The repository now also contains the pre-repository Umeko/Ollama/PostgreSQL implementation as a baseline. That imported code documents what existed before the current repository architecture was defined; it must not be mistaken for the final target design.
+The repository now also contains the pre-repository Agent/Ollama/PostgreSQL implementation as a baseline. That imported code documents what existed before the current repository architecture was defined; it must not be mistaken for the final target design.
 
 ## Ecosystem boundaries
 
@@ -210,7 +210,7 @@ FLAMORIS software is provided as-is and does not include guaranteed individual s
 
 FLAMORIS AI Agentは、FLAMORISで長く動き続けるAI Agentのためのリポジトリです。
 
-**旧梅子の実装を保存しつつ、packaged consoleとbounded Agent MCP surfaceまで実装済みです。Phase 0のGPT-OSS/llama.cpp実機確認は#2で完了しました。**
+**旧Agentの実装を保存しつつ、packaged consoleとbounded Agent MCP surfaceまで実装済みです。Phase 0のGPT-OSS/llama.cpp実機確認は#2で完了しました。**
 
 現在のpackaged runtimeは、consoleとAgent MCPが使うConversation / Session境界、設定されたidentity / personality / prompt context、PostgreSQL上のAgent側状態をすでに担当しています。
 

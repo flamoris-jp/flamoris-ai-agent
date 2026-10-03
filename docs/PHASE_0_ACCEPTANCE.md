@@ -33,7 +33,7 @@ Tested commit: `<commit>`
 |---|---|---|
 | Runtime health and actual model resolution | Pending | |
 | Existing Agent identity preserved | Pending | |
-| Umeko starts and returns a real response | Pending | |
+| Agent starts and returns a real response | Pending | |
 | Conversation and user/assistant messages saved | Pending | |
 | Runtime instance references the correct model/Agent | Pending | |
 | Clean exit closes session/conversation/instance | Pending | |
