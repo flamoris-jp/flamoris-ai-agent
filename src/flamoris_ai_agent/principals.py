@@ -30,8 +30,14 @@ class PrincipalKeys:
     project: str
 
     def __post_init__(self):
-        for value in (self.human, self.agent, self.project):
+        for value in (self.human, self.agent):
             key(value)
+        if (
+            type(self.project) is not str
+            or len(self.project) > 64
+            or not re.fullmatch(r"[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*", self.project)
+        ):
+            raise IntelligenceError("principal_unavailable")
 
 
 @dataclass(frozen=True)
