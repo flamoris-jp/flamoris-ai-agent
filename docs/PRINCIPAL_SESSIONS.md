@@ -25,6 +25,11 @@ stdio and console stay fixed-principal. Review exact Hub catalog parity before
 enabling this catalog in a deployment; setting this variable changes discovery.
 
 `sessions.open` takes `request: {human, agent, project}` with no other fields.
+Human and Agent keys retain the 1–64 ASCII letter/digit/underscore/hyphen rule.
+Project keys also permit dots between nonempty segments, such as `example.project`,
+within the same 64-character total bound. Leading/trailing dots, empty segments,
+paths and whitespace are refused. Keys are matched exactly without normalization;
+supporting existing dotted project identities changes no grant or DB identity.
 It returns `session_id`, UTC `expires_at` and `principal_revision: 1` on success.
 `ask_scoped` takes the existing bounded ask request plus required `session_id`;
 it accepts no identity/provider overrides. The session UUID is canonicalized and
