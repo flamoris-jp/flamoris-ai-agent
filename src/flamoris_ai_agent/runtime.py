@@ -108,9 +108,12 @@ class AgentSession:
         if self.started or self.closed or self.failed:
             raise IntelligenceError("invalid_lifecycle")
         try:
-            context = self.context_loader()
+            restore = getattr(type(self.store), "restore_context", None)
+            context = self.context_loader() if restore is None else None
             self.identity = await self.client.resolve()
             self.previous = self.store.open(self.identity, load_previous)
+            if restore is not None:
+                context = restore(self.store, self.context_loader)
             self.previous_text = prompts.format_previous_conversation(self.previous)
             self.policy = prompts.build_system_prompt(context)
             validate_messages(self._messages([]))
@@ -120,6 +123,7 @@ class AgentSession:
                 prompts.json_safe(
                     {
                         "agent_sections": context,
+                        "personality_revision": getattr(context, "revision", None),
                         "previous_conversation": self.previous,
                         **({"studio_context": self.context_data} if self.context_data else {}),
                     }
@@ -169,6 +173,7 @@ class AgentSession:
                     **(metadata or {}),
                     "intelligence_model": result.identity.model,
                     "intelligence_provider": result.identity.provider,
+                    **({"intelligence_usage": result.usage} if result.usage else {}),
                     **(
                         {
                             "intelligence_public_model": result.public_identity.model,
@@ -209,17 +214,22 @@ class AgentSession:
             await self.client.aclose()
 
 
-def configured_session(*, store=None, context_loader=prompts.load_system_context, context=None):
+def configured_session(
+    *, store=None, context_loader=prompts.load_system_context, context=None, target=None
+):
     mode = os.getenv("AGENT_INTELLIGENCE_TRANSPORT", "direct")
-    if context is not None and mode != "mcp":
+    if (context is not None or target is not None) and mode != "mcp":
         raise IntelligenceError("context_unavailable")
     if mode == "mcp":
         from flamoris_ai_agent.intelligence_mcp import ApprovedTarget, IntelligenceMCPClient
 
         try:
-            target = ApprovedTarget.model_validate(
+            selected = target is not None
+            target = target or ApprovedTarget.model_validate(
                 json.loads(os.environ["AGENT_INTELLIGENCE_TARGET"])
             )
+            if not selected and target.data_flow != "local_only":
+                raise IntelligenceError("remote_export_forbidden")
             client = IntelligenceMCPClient(os.environ["AGENT_INTELLIGENCE_MCP_ENDPOINT"], target)
         except (ValueError, TypeError, KeyError):
             raise IntelligenceError("invalid_intelligence_configuration") from None

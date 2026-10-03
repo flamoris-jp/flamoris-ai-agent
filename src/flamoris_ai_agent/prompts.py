@@ -5,8 +5,6 @@ import os
 from datetime import date, datetime
 from uuid import UUID
 
-from flamoris_ai_agent.config import load_agent_context
-
 MAX_CONTEXT_MESSAGES = int(os.getenv("AGENT_CONTEXT_MESSAGES", "16"))
 PREVIOUS_MESSAGE_LIMIT = int(os.getenv("AGENT_PREVIOUS_MESSAGES", "12"))
 LOAD_PREVIOUS = os.getenv(
@@ -29,7 +27,9 @@ def json_safe(value):
 
 
 def load_system_context() -> list[dict[str, str]]:
-    return load_agent_context()
+    from flamoris_ai_agent.personality import load_context
+
+    return load_context()
 
 
 def format_previous_conversation(previous) -> str | None:

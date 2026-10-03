@@ -1,18 +1,33 @@
 """Explicit opt-in shared service using immutable authorized principal bindings."""
 
 import asyncio
+import os
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import anyio
-from pydantic import BaseModel, ConfigDict, StrictStr, ValidationError, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    StrictStr,
+    ValidationError,
+    field_validator,
+)
 
 from flamoris_ai_agent.availability import AvailabilityProbe
-from flamoris_ai_agent.config import load_agent_context
 from flamoris_ai_agent.delegation import authenticated_delegator
 from flamoris_ai_agent.execution import IntelligenceError
 from flamoris_ai_agent.mcp_service import AgentService, AskRequest
 from flamoris_ai_agent.mcp_store import MCPStore
+from flamoris_ai_agent.model_settings import ModelSettings
+from flamoris_ai_agent.personality import (
+    PersonalityRead,
+    PersonalitySave,
+    PersonalityStore,
+    load_context,
+)
 from flamoris_ai_agent.principals import PrincipalKeys, PrincipalSessions
 from flamoris_ai_agent.runtime import configured_session
 from flamoris_ai_agent.studio_context import StudioContext
@@ -23,6 +38,11 @@ class OpenSessionRequest(BaseModel):
     human: StrictStr
     agent: StrictStr
     project: StrictStr
+
+
+class SettingsOpenRequest(OpenSessionRequest):
+    model_id: StrictStr | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    remote_consent: StrictBool = False
 
 
 class SessionRequest(BaseModel):
@@ -51,16 +71,54 @@ class ScopedAgentService(AgentService):
     def __init__(self, principals=None, scoped_session_factory=None, availability_probe=None):
         super().__init__()
         self.principals = principals or PrincipalSessions()
+        self.settings_enabled = os.getenv("AGENT_SETTINGS_ENABLED") == "1"
+        self.models = ModelSettings(self.principals) if self.settings_enabled else None
+        self.personalities = PersonalityStore(self.principals) if self.settings_enabled else None
         self.scoped_session_factory = scoped_session_factory or self._configured
-        self.availability_probe = availability_probe or AvailabilityProbe(self.principals)
+        self.availability_probe = availability_probe or AvailabilityProbe(
+            self.principals, self.models
+        )
         self.probing = False
+        self.settings_active = 0
 
     def _configured(self, request, binding):
+        option = self.models.require(binding) if self.models else None
         return configured_session(
-            store=MCPStore(request, binding=binding, principals=self.principals),
-            context_loader=lambda: load_agent_context(binding.keys.agent),
+            store=MCPStore(
+                request, binding=binding, principals=self.principals, model_option=option
+            ),
+            context_loader=lambda: load_context(binding.keys.agent),
+            target=option.target if option else None,
             context=request.context,
         )
+
+    async def settings_operation(self, operation, raw):
+        caller = authenticated_delegator.get()
+        if caller is None or not self.settings_enabled or self.closing:
+            return {"ok": False, "error": {"code": "principal_unavailable"}}
+        if self.settings_active >= 2:
+            return {"ok": False, "error": {"code": "busy"}}
+        self.settings_active += 1
+        try:
+            if operation == "models":
+                request = OpenSessionRequest.model_validate(raw)
+                keys = PrincipalKeys(request.human, request.agent, request.project)
+                data = await anyio.to_thread.run_sync(self.models.list, caller, keys)
+            else:
+                model = PersonalitySave if operation == "save" else PersonalityRead
+                request = model.model_validate(raw)
+                data = await anyio.to_thread.run_sync(
+                    getattr(self.personalities, operation), caller, request
+                )
+            return {"ok": True, **data}
+        except IntelligenceError as exc:
+            return {"ok": False, "error": {"code": exc.code}}
+        except (ValidationError, ValueError, TypeError, UnicodeError):
+            return {"ok": False, "error": {"code": "invalid_input"}}
+        except Exception:
+            return {"ok": False, "error": {"code": "settings_unavailable"}}
+        finally:
+            self.settings_active -= 1
 
     async def availability(self, raw):
         caller = authenticated_delegator.get()
@@ -71,6 +129,8 @@ class ScopedAgentService(AgentService):
             binding = await anyio.to_thread.run_sync(
                 self.principals.require, caller, request.session_id
             )
+            if self.models:
+                await anyio.to_thread.run_sync(self.models.require, binding)
         except (ValidationError, ValueError, TypeError):
             return {"ok": False, "error": {"code": "invalid_input"}}
         except Exception:
@@ -131,9 +191,22 @@ class ScopedAgentService(AgentService):
         if self.closing:
             return {"ok": False, "error": {"code": "shutting_down"}}
         try:
-            request = OpenSessionRequest.model_validate(raw)
+            request = (
+                SettingsOpenRequest if self.settings_enabled else OpenSessionRequest
+            ).model_validate(raw)
             keys = PrincipalKeys(request.human, request.agent, request.project)
-            bound = await anyio.to_thread.run_sync(self.principals.open, caller, keys)
+            if self.models:
+                bound = await anyio.to_thread.run_sync(
+                    lambda: self.principals.open(
+                        caller,
+                        keys,
+                        configure=lambda conn, binding: self.models.bind_on(
+                            conn, binding, request.model_id, request.remote_consent
+                        ),
+                    )
+                )
+            else:
+                bound = await anyio.to_thread.run_sync(self.principals.open, caller, keys)
             return {
                 "ok": True,
                 "session_id": str(bound.session_id),
@@ -163,6 +236,8 @@ class ScopedAgentService(AgentService):
             binding = await anyio.to_thread.run_sync(
                 self.principals.require, caller, request.session_id
             )
+            if self.models:
+                await anyio.to_thread.run_sync(self.models.require, binding)
         except IntelligenceError as exc:
             return {"ok": False, "error": {"code": exc.code}}
         except Exception:
