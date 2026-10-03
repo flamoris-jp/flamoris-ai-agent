@@ -199,7 +199,7 @@ def test_parent_data_envelope_and_query_bounds():
     store, conn, refs = opened_store(str(uuid4()))
     conn.execute.side_effect = [
         Mock(fetchone=Mock(return_value=None)),
-        Mock(fetchone=Mock(return_value=("parent", None, None))),
+        Mock(fetchone=Mock(return_value=("parent", None, None, {"agent_sections": []}, {}))),
         Mock(fetchall=Mock(return_value=[("system", "fake system", "untrusted", None)])),
     ]
     previous = open_with(store, conn, refs)

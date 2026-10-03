@@ -82,10 +82,10 @@ class ApprovedTarget(BaseModel):
 
     @field_validator("data_flow")
     @classmethod
-    def local_only(cls, value):
+    def data_policy(cls, value):
         # Remote export needs complete transcript/context classification and policy.
         # A configured API URL is not authorization to export existing local history.
-        if value != "local_only":
+        if value not in {"local_only", "remote_authorized"}:
             raise ValueError("unsupported_data_flow")
         return value
 
@@ -217,6 +217,8 @@ class IntelligenceMCPClient:
                     model.get("model_id") != self.target.public_model_id
                     or model.get("provider_id") != self.target.provider_id
                     or model.get("discovery") != "configured"
+                    or self.target.provider_id == "openai"
+                    and model.get("available") is not True
                     or type(model.get("capability_ids")) is not list
                     or self.target.capability_id not in model["capability_ids"]
                     or type(model.get("context_tokens")) is not int
@@ -326,6 +328,7 @@ class IntelligenceMCPClient:
             text,
             ModelIdentity(self.target.provider_id, self.target.public_model_id),
             execution_id,
+            usage,
         )
 
     async def aclose(self):

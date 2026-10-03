@@ -30,6 +30,7 @@ class ExecutionResult:
     text: str
     public_identity: ModelIdentity | None = None
     execution_id: str | None = None
+    usage: dict[str, int] | None = None
 
 
 MAX_INPUT_BYTES = 65536

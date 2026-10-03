@@ -10,10 +10,19 @@ from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import Field
 
 from flamoris_ai_agent.mcp_service import AgentService, AskRequest
-from flamoris_ai_agent.scoped_service import OpenSessionRequest, ScopedAskRequest, SessionRequest
+from flamoris_ai_agent.personality import PersonalityRead, PersonalitySave
+from flamoris_ai_agent.scoped_service import (
+    OpenSessionRequest,
+    ScopedAskRequest,
+    SessionRequest,
+    SettingsOpenRequest,
+)
 
 RequestArgument = Annotated[Any, Field(json_schema_extra=AskRequest.model_json_schema())]
 SessionArgument = Annotated[Any, Field(json_schema_extra=OpenSessionRequest.model_json_schema())]
+SettingsSessionArgument = Annotated[
+    Any, Field(json_schema_extra=SettingsOpenRequest.model_json_schema())
+]
 
 
 def inline_schema(model):
@@ -40,6 +49,9 @@ def inline_schema(model):
 
 
 ScopedArgument = Annotated[Any, Field(json_schema_extra=inline_schema(ScopedAskRequest))]
+PersonalityReadArgument = Annotated[Any, Field(json_schema_extra=inline_schema(PersonalityRead))]
+PersonalitySaveArgument = Annotated[Any, Field(json_schema_extra=inline_schema(PersonalitySave))]
+
 AvailabilityArgument = Annotated[Any, Field(json_schema_extra=SessionRequest.model_json_schema())]
 
 
@@ -91,18 +103,51 @@ def create_server(service=None):
             """Fresh scoped prerequisites; no inference, conversation or runtime activation."""
             return tool_result(await service.availability(request))
 
-        @server.tool(
-            name="sessions.open",
-            annotations=ToolAnnotations(
-                read_only_hint=False,
-                destructive_hint=False,
-                idempotent_hint=False,
-                open_world_hint=False,
-            ),
-        )
-        async def open_session(request: SessionArgument = None) -> CallToolResult:
-            """Resolve permitted principal keys under the authenticated transport delegator."""
-            return tool_result(await service.open_session(request))
+        if getattr(service, "settings_enabled", False):
+
+            @server.tool(name="models.allowed")
+            async def models_allowed(request: SessionArgument = None) -> CallToolResult:
+                """Exact principal-authorized model catalog; no inference or session allocation."""
+                return tool_result(await service.settings_operation("models", request))
+
+            @server.tool(name="personality.get")
+            async def personality_get(request: PersonalityReadArgument = None) -> CallToolResult:
+                """Read current Agent personality under a separate explicit read grant."""
+                return tool_result(await service.settings_operation("get", request))
+
+            @server.tool(name="personality.history")
+            async def personality_history(
+                request: PersonalityReadArgument = None,
+            ) -> CallToolResult:
+                """Read at most twenty historical revisions; no transcript or policy data."""
+                return tool_result(await service.settings_operation("history", request))
+
+            @server.tool(name="personality.save")
+            async def personality_save(request: PersonalitySaveArgument = None) -> CallToolResult:
+                """Atomic expected-revision save with an immutable update UUID/digest fence."""
+                return tool_result(await service.settings_operation("save", request))
+
+            @server.tool(name="sessions.open")
+            async def open_settings_session(
+                request: SettingsSessionArgument = None,
+            ) -> CallToolResult:
+                """Bind authorized model and explicit remote consent to an immutable session."""
+                return tool_result(await service.open_session(request))
+
+        else:
+
+            @server.tool(
+                name="sessions.open",
+                annotations=ToolAnnotations(
+                    read_only_hint=False,
+                    destructive_hint=False,
+                    idempotent_hint=False,
+                    open_world_hint=False,
+                ),
+            )
+            async def open_session(request: SessionArgument = None) -> CallToolResult:
+                """Resolve permitted principal keys under the authenticated transport delegator."""
+                return tool_result(await service.open_session(request))
 
         @server.tool(
             name="ask_scoped",

@@ -15,6 +15,8 @@ dependencies = ["httpx>=0.28,<1", "httpx2>=2.13,<3", "psycopg[binary]>=3.2,<4", 
 dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.14,<1", "build>=1.2,<2"]
 
 [project.scripts]
+flamoris-agent-register-targets = "flamoris_ai_agent.model_settings:main"
+flamoris-agent-import-personality = "flamoris_ai_agent.personality:main"
 flamoris-agent-chat = "flamoris_ai_agent.chat:main"
 flamoris-agent-setup = "flamoris_ai_agent.setup:main"
 flamoris-agent-register-runtime = "flamoris_ai_agent.register_runtime:main"

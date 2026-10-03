@@ -59,7 +59,7 @@ class PrincipalSessions:
     def __init__(self, connection_factory=None):
         self.connection_factory = connection_factory or db.get_connection
 
-    def open(self, delegator, keys: PrincipalKeys):
+    def open(self, delegator, keys: PrincipalKeys, *, configure=None):
         key(delegator)
         if not isinstance(keys, PrincipalKeys):
             raise IntelligenceError("principal_unavailable")
@@ -101,7 +101,10 @@ class PrincipalSessions:
                 """,
                 (session_id, delegator, *row, SESSION_SECONDS),
             ).fetchone()[0]
-            return PrincipalBinding(session_id, delegator, keys, *row, expires_at)
+            binding = PrincipalBinding(session_id, delegator, keys, *row, expires_at)
+            if configure is not None:
+                configure(conn, binding)
+            return binding
 
     def require(self, delegator, session_id):
         with self.connection_factory() as conn:

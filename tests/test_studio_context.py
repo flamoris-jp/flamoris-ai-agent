@@ -226,7 +226,7 @@ async def test_default_probe_checks_mcp_policy_and_database_without_lifecycle(mo
         probe._database = Mock()
         with patch("flamoris_ai_agent.availability.configured_session", return_value=configured):
             await probe(bound)
-        probe._database.assert_called_once_with(bound, client.identity)
+        probe._database.assert_called_once_with(bound, client.identity, None)
         configured.store.open.assert_not_called()
         configured.store.start.assert_not_called()
     assert [name for name, _ in upstream.calls] == [

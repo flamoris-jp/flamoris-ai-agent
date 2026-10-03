@@ -21,10 +21,12 @@ def scope_id(refs):
 
 
 class MCPStore(PostgresStore):
-    def __init__(self, request, *, binding=None, principals=None):
+    def __init__(self, request, *, binding=None, principals=None, model_option=None):
         if (binding is None) != (principals is None):
             raise IntelligenceError("principal_unavailable")
         self.binding, self.principals = binding, principals
+        self.model_option = model_option
+        self.previous_snapshot = None
         super().__init__(self._scoped_refs if binding is not None else None)
         self.request = request
 
@@ -32,7 +34,11 @@ class MCPStore(PostgresStore):
         binding = self.principals.require_on(conn, self.binding.delegator, self.binding.session_id)
         if binding != self.binding:
             raise IntelligenceError("principal_unavailable")
-        refs = db.load_runtime_refs(conn, principal=binding.keys)
+        refs = db.load_runtime_refs(
+            conn,
+            principal=binding.keys,
+            model_key=self.model_option.model_key if self.model_option else None,
+        )
         if any(refs[name] != value for name, value in binding.ids.items()):
             raise IntelligenceError("principal_unavailable")
         return refs
@@ -51,7 +57,7 @@ class MCPStore(PostgresStore):
             return None
         conversation = self.conn.execute(
             """
-            SELECT c.id, c.created_at, c.ended_at
+            SELECT c.id, c.created_at, c.ended_at, c.system_context, c.metadata
             FROM chat.conversations c
             WHERE c.id = %s AND c.project_id = %s AND c.primary_agent_id = %s
               AND c.status = 'closed' AND c.ended_at IS NOT NULL
@@ -79,6 +85,15 @@ class MCPStore(PostgresStore):
         ).fetchone()
         if not conversation:
             raise IntelligenceError("conversation_unavailable")
+        self.previous_snapshot = conversation[3]
+        selection = conversation[4].get("model_selection")
+        expected = self.selection()
+        if selection != expected:
+            raise IntelligenceError("model_selection_changed")
+        # A remote conversation can only continue a previously admitted remote snapshot.
+        if self.model_option and self.model_option.target.data_flow == "remote_authorized":
+            if not selection or selection.get("data_flow") != "remote_authorized":
+                raise IntelligenceError("remote_export_forbidden")
         rows = self.conn.execute(
             """
             SELECT m.role, left(COALESCE(p.display_name, m.role), 513),
@@ -103,11 +118,31 @@ class MCPStore(PostgresStore):
             "messages": messages,
         }
 
+    def selection(self):
+        if self.model_option is None:
+            return None
+        return {
+            "id": self.model_option.id,
+            "digest": self.model_option.digest,
+            "data_flow": self.model_option.target.data_flow,
+        }
+
+    def restore_context(self, loader):
+        if self.previous_snapshot is None:
+            return loader()
+        from .personality import ContextSnapshot
+
+        sections = self.previous_snapshot.get("agent_sections")
+        if not isinstance(sections, list):
+            raise IntelligenceError("invalid_agent_context")
+        return ContextSnapshot(sections, self.previous_snapshot.get("personality_revision"))
+
     def start(self, policy, context):
         metadata = {
             "client": "agent-mcp",
             "scope": self.scope,
             "request_id": self.request.request_id,
+            **({"model_selection": self.selection()} if self.model_option else {}),
             "previous_conversation_id": self.request.previous_conversation_id,
             **(
                 {
@@ -126,6 +161,11 @@ class MCPStore(PostgresStore):
                     )
                     if current != self.binding:
                         raise IntelligenceError("principal_unavailable")
+                if self.model_option is not None:
+                    from .model_settings import ModelSettings
+
+                    if ModelSettings(self.principals).require(self.binding) != self.model_option:
+                        raise IntelligenceError("model_selection_changed")
                 instance = db.start_instance(self.conn, self.refs)
                 runtime = db.start_conversation(
                     self.conn,
