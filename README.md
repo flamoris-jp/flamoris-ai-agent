@@ -1,252 +1,86 @@
 # FLAMORIS AI Agent
 
-Persistent AI agent runtime for FLAMORIS.
+Optional persistent personality and conversation layer for FLAMORIS. Agent owns identity/personality, conversation/session state, memory/context policy and Agent-specific prompt assembly. It is not the mandatory entry point for raw inference or generation.
 
-**Status: the packaged console and bounded Agent MCP surface are implemented, with a generic single-principal setup flow. Phase 0 live acceptance on GPT-OSS/llama.cpp was completed in #2.**
+## Current implementation and target
 
-Part of the [FLAMORIS AI](https://github.com/flamoris-jp/flamoris-ai) family.
+The packaged console and bounded Agent MCP surface are implemented. Phase 0 GPT-OSS/llama.cpp acceptance is recorded in #2; this is historical evidence, not a current host-health claim. Persisted principal sessions, bounded Studio context and opt-in personality/model settings have their own contracts linked below. General Memory CRUD, general tools and durable cross-service orchestration are not claimed complete.
 
-FLAMORIS AI Agent is intended to own long-lived agent-facing state and behavior: conversations, memory, knowledge access, prompts, tools, and orchestration toward intelligence and generation services.
-
-It is not the model runtime itself, not the media-generation engine, and not the owner of FLAMORIS product documents.
-
-See [assistant settings and model integration](docs/ASSISTANT_SETTINGS_V1.md) for the opt-in extension and migration gates.
-
-## Proposed integration design
-
-[Studio assistant integration](docs/STUDIO_ASSISTANT.md) records the proposed media/Workflow/Agent integration coordinated by [FLAMORIS AI #15](https://github.com/flamoris-jp/flamoris-ai/issues/15). It is a design proposal, not a claim that new providers, composed execution or shared-user Agent assistance are implemented. Existing public contracts and readiness gates remain authoritative.
-
-## Imported baseline
-
-The initial source baseline was imported from the existing `flamoris_ai` working tree.
-
-It includes:
-
-- historical deployment-specific Agent context preserved only under `history/`;
-- `src/flamoris_ai_agent` active console chat/runtime package;
-- PostgreSQL schema, seed, and smoke-test SQL under `db`;
-- the 2026-08-16 design notes and earlier prototype history.
-
-The baseline is preserved intentionally so future phases can migrate from known working ideas instead of redesigning from memory. Existing assumptions such as direct Ollama access, machine-specific runtime identities, and the old DB shape are historical inputs, not automatically current architecture requirements.
-
-Start with the [installation guide](docs/INSTALL.md), then see
-[Agent context](docs/AGENT_CONTEXT.md) for custom Agents. The
-[migration phases](docs/PHASES.md) and [Phase 0 runbook](docs/PHASE_0_RUNBOOK.md)
-record the historical GPT-OSS deployment path.
-
-Secrets are not part of the baseline. The real `.env` remains untracked; only `.env.example` is committed.
-
-## Development and layout
-
-Install with `python -m pip install -e '.[dev]'`, then run `ruff check .`,
-`ruff format --check .`, `pytest`, and `python -m build`.
-Tests use fake providers and DB connections; no GPU or private credentials are needed.
-
-| Path | Responsibility |
-|---|---|
-| `src/flamoris_ai_agent/` | Active runtime and packaged entry points |
-| `agents/example-agent/` | Synthetic English-only packaged example context |
-| `db/` | Generic PostgreSQL schema and synthetic example seed |
-| `tests/` | Offline tests and installed-wheel smoke check |
-| `docs/` | Current migration/runbook and forward design |
-| `history/` | Imported records, prototypes, patches, and retired Ollama definitions |
-
-Use `flamoris-agent-setup`, `flamoris-agent-chat`, `flamoris-agent-register-runtime`, and
-`flamoris-agent-verify-db` after installation. `python -m flamoris_ai_agent.chat`
-is also supported. See [the history inventory](history/README.md) for moved records.
-
-Source/editable installs use the repository-root `.env` and `agents/`. Wheel
-installs use bundled example context and process environment by default. An
-absolute `FLAMORIS_AGENT_HOME` selects a private `.env` and
-`agents/<agent-key>/agent.toml` with ordered Markdown sections. It is
-authoritative; a missing selected Agent fails. See [the context contract](docs/AGENT_CONTEXT.md).
-
-## Fresh database setup
-
-Follow [INSTALL.md](docs/INSTALL.md) for the database, environment, Agent context,
-setup, and verification steps. The public example seed is not a deployment setup path.
-
-## Agent MCP (single principal)
-
-The [persisted principal-session contract](docs/PRINCIPAL_SESSIONS.md)
-is available for #18. Default fixed-principal tools remain compatible.
-Shared HTTP has a separate explicitly configured catalog;
-Studio account integration, operator retention configuration and live acceptance remain.
-An [explicit bounded owner retirement operation](docs/PRINCIPAL_RETENTION.md)
-preserves conversation history and request fences while retiring eligible expired
-authorization bindings; it is not automatically enabled.
-
-The [approved Intelligence MCP adapter](docs/INTELLIGENCE_MCP.md) is explicitly
-configurable for local-only bounded execution. Default direct execution stays
-compatible; no automatic fallback or remote transcript export is added.
-Shared HTTP additionally supports [bounded Image context and scoped ask availability](docs/STUDIO_CONTEXT_V1.md).
-
-Run `flamoris-agent-mcp` for stdio MCP, using the same environment/runtime
-identities as the console. Local tools are `health` and `ask`; Hub may later
-prefix them with `agent.`. No Hub configuration or runtime activation is automatic.
-See [MCP_CONTRACT.md](docs/MCP_CONTRACT.md) for the exact scope and lifecycle.
-
-`ask` accepts a `request` object with a UUID `request_id`, `text`, and optional
-`previous_conversation_id`. Each request creates/closes a new conversation.
-Continuations explicitly reference a closed MCP conversation belonging to the
-configured human/Agent/project. Console histories are not remotely exposed.
-Use one process/worker. Reusing an admitted request ID returns `duplicate_request`
-even after restart; never retry an uncertain operation with a fresh ID automatically.
-
-This is not a multi-user endpoint. stdio inherits the trusted launcher's identity.
-No tools, Memory CRUD, GPU control or automatic Intelligence MCP migration is included.
-The `health` result distinguishes process liveness from untested dependencies.
-
-For a non-root container with private authenticated Streamable HTTP, see
-[Docker deployment](docs/DOCKER.md). PostgreSQL and inference remain external;
-the default Compose port is loopback-only. This is not a public multi-user service.
-
-## Intended scope
-
-The console uses the shared Agent execution boundary described in
-[EXECUTION_CONTRACT.md](docs/EXECUTION_CONTRACT.md). Input/output are bounded;
-inference errors are fixed codes and never expose provider bodies or credentials.
-Phase 0 live acceptance in #2 is complete; offline tests remain separate from deployment evidence.
-
-The current packaged runtime already owns the Agent-side conversation/session boundary used by the console and Agent MCP, along with its configured identity/personality/prompt context and PostgreSQL-backed Agent state.
-
-Future phases may expand or normalize:
-
-- persistent memory and its lifecycle;
-- knowledge references and retrieval context;
-- broader prompt and Agent-policy management;
-- tool registration, capability checks, and tool invocation;
-- persistent Agent-level orchestration across intelligence and generation services;
-- richer provenance needed to understand why an agent acted or answered as it did.
-
-Those future capabilities remain Agent-owned design areas; this status does not claim that Memory CRUD, general tools, or durable cross-service orchestration are implemented today.
-
-The repository now also contains the pre-repository Agent/Ollama/PostgreSQL implementation as a baseline. That imported code documents what existed before the current repository architecture was defined; it must not be mistaken for the final target design.
-
-## Ecosystem boundaries
+[AI #18](https://github.com/flamoris-jp/flamoris-ai/issues/18) and [Agent #38](https://github.com/flamoris-jp/flamoris-ai-agent/issues/38) correct the target dependency direction:
 
 ```text
-FLAMORIS application / Studio
-           │
-           ▼
-    flamoris-ai-agent
-      │            │
-      │            └────────────► flamoris-generation-mcp
-      │                            image / video / music / voice
-      ▼
-flamoris-intelligence-mcp
- language / reasoning / coding intelligence
+Target internal path:
+Studio Agent Support -> AI Agent -> narrow non-MCP execution interface
+                                      -> local Runtime / API / vendor runtime
+
+Separate external path:
+ChatGPT -> MCP Hub -> Intelligence MCP -> approved internal capability
 ```
 
-These are boundaries, not mandatory layers.
+Existing Agent/Studio MCP paths have not been removed by these docs. The [legacy adapter record](docs/INTELLIGENCE_MCP.md) is an as-built migration reference, not the future route. Preserve the transport-independent [ExecutionClient boundary](docs/EXECUTION_CONTRACT.md), decide the smallest working replacement, then remove internal MCP-only coupling under a separately authorized implementation task.
 
-### FLAMORIS Intelligence MCP
+An inbound external Agent MCP adapter and an outbound Agent-to-Intelligence MCP client are different things. Removing the latter does not authorize deleting every external MCP tool. Studio's internal inbound MCP use also needs its own caller/contract audit.
 
-[flamoris-intelligence-mcp](https://github.com/flamoris-jp/flamoris-intelligence-mcp) is the implemented MCP-native, provider-neutral gateway for bounded language, reasoning, coding, and related intelligence capabilities. Its Phase 1 runtime is mock/CI validated; live deployment acceptance remains a separate check.
+Current work is documentation review/fixes and explicitly requested documentation merges only. No code/DB/configuration/deployment changes. Generation Controller remains unimplemented; Generation/ComfyWorkFlow/reference-image work stays paused. Intelligence cleanup comes first.
 
-The Agent may use it, but should not absorb model/provider runtime ownership. If Intelligence MCP performs bounded task coordination or multi-agent execution inside an intelligence request, the Agent still remains the authority for persistent Agent identity, conversation, memory, and long-lived workflow context.
+## Existing contracts
 
-### FLAMORIS Generation MCP
+- [Installation](docs/INSTALL.md) and [Agent context](docs/AGENT_CONTEXT.md)
+- [ExecutionClient](docs/EXECUTION_CONTRACT.md)
+- [Fixed-principal MCP contract](docs/MCP_CONTRACT.md)
+- [Persisted principal sessions](docs/PRINCIPAL_SESSIONS.md) and [bounded retirement](docs/PRINCIPAL_RETENTION.md)
+- [Bounded Image context and ask availability](docs/STUDIO_CONTEXT_V1.md)
+- [Current opt-in settings](docs/ASSISTANT_SETTINGS_V1.md)
+- [Corrected Studio design](docs/STUDIO_ASSISTANT.md)
+- [Docker reference](docs/DOCKER.md)
 
-[flamoris-generation-mcp](https://github.com/flamoris-jp/flamoris-generation-mcp) owns generative-media and closely related media-analysis workflows, jobs, and assets.
+Deployment commands in existing runbooks describe the as-built service and are not an authorization to switch it during this documentation pass. Do not invent replacement configuration names or disable a required legacy adapter solely because the target architecture changed.
 
-The Agent may request generation, but should not become a second owner of generation job state.
+## Baseline and layout
 
-### Product repositories
+The imported `flamoris_ai` baseline, earlier design notes and retired Ollama definitions are retained as history, not current architecture. Secrets were not imported; real `.env` stays untracked.
 
-FLAMORIS 2D, Cutwork, Kachinco, Studio, and other applications remain authoritative for their own project/document state and editing behavior.
+| Path | Responsibility |
+| --- | --- |
+| `src/flamoris_ai_agent/` | Active package and entry points |
+| `agents/example-agent/` | Synthetic packaged example |
+| `db/` | PostgreSQL schema, migrations and synthetic seed |
+| `tests/` | Offline/provider/DB fixture and package tests |
+| `docs/` | Current contracts, design and runbooks |
+| `history/` | Imported/retired records |
 
-The Agent may assist those applications only through explicit product commands, queries, and permissions. It must not silently maintain a competing copy of product state.
+Use the installation guide for `flamoris-agent-setup`, `flamoris-agent-chat`, `flamoris-agent-register-runtime` and `flamoris-agent-verify-db`; `python -m flamoris_ai_agent.chat` is also supported. Source/editable installs use repository `.env` and `agents/`; wheel installs default to bundled context and process environment. `FLAMORIS_AGENT_HOME` selects private context as described by the context contract; missing selected context fails rather than choosing another Agent. The public example seed is not a deployment setup path.
 
-### FLAMORIS Commons
+```sh
+python -m pip install -e '.[dev]'
+ruff check .
+ruff format --check .
+pytest
+python -m build
+```
 
-Shared infrastructure that is not specifically Agent-domain logic belongs in [FLAMORIS Commons](https://github.com/flamoris-jp/flamoris-commons) or one of its dedicated shared repositories.
+Normal tests require no paid API, GPU, private persona or model weights. Actual PostgreSQL/provider/deployment evidence remains separate.
 
-## Design principles
+## Existing MCP scope
 
-1. **Agent state has one authority**
-   - Conversation state, memory, prompts, and agent policy should have explicit ownership.
-   - Do not duplicate them across model providers or tools without a defined synchronization contract.
+The fixed-principal stdio entry is `flamoris-agent-mcp`, with `health` and `ask`. `ask` uses `request_id`, `text` and optional `previous_conversation_id`, creates/closes a conversation and enforces the documented owner scope and durable duplicate fence. An uncertain attempt must not be replayed with a new UUID automatically. Console history is not exposed through unscoped lookup.
 
-2. **Memory must be deliberate**
-   - Persistent memory is user-impacting state, not an incidental cache.
-   - Storage, provenance, retention, deletion, visibility, and update rules should be explicit before implementation.
+Opt-in shared HTTP principal/session and settings catalogs are separate contracts, not a claim that the fixed-principal stdio endpoint is multi-user. A transport token does not identify a human. Preserve independent membership/delegation checks, compatible continuation identity and current availability semantics. Inference and PostgreSQL remain external to the container; the current deployment reference is not changed here.
 
-3. **Tools are capabilities, not ambient authority**
-   - Tool access should be scoped and inspectable.
-   - Filesystem, network, product-editing, and credential-bearing actions require explicit boundaries.
+## Ownership and terminology
 
-4. **Treat retrieved content as untrusted**
-   - Knowledge sources, webpages, files, messages, and model outputs may contain malicious or misleading instructions.
-   - Retrieved content must not silently redefine system policy or tool permissions.
+AI Runtime owns model-adjacent inference, ExecuteFlow, the distinct compiled ExecutionPlan, active Jobs/Continuations and resources. ComfyWorkFlow means ComfyUI graph/JSON, not an Agent flow or all media requests. Generation-domain jobs/inputs/assets remain outside Agent; Generation MCP is the external facade and future Controller work is deferred. GPU Node Manager retains host lifecycle authority.
 
-5. **Provider-neutral intelligence access**
-   - Local and remote models should be replaceable behind explicit interfaces.
-   - Provider names should not become the Agent's public architecture.
+Products own their document, editing, revision and permission state. Agent may assist through explicit granted contracts, not shadow copies or ambient tool authority. Commons owns generic infrastructure. Personality and model selection remain independent; provider configuration and secrets never become persona or memory.
 
-6. **Human-authoritative**
-   - AI can plan, reason, draft, inspect, and operate tools within granted capabilities.
-   - Product state, security policy, licensing, and release decisions remain human-authoritative.
-
-## Repository policy
-
-This repository follows the shared [FLAMORIS Repository Policy](https://github.com/flamoris-jp/flamoris-commons/blob/main/docs/repository-policy.md).
-
-Agent-specific privacy, memory, and tool-safety rules supplement that shared policy.
-
-## License
-
-Code and documentation in this repository are licensed under the [Apache License 2.0](LICENSE), unless otherwise noted.
-
-AI models, model weights, datasets, retrieved knowledge sources, generated media, third-party prompts, and provider-hosted assets are not automatically covered by this repository's license. Their applicable licenses and usage terms must be checked separately.
-
-Commercial use of Apache-2.0 licensed FLAMORIS code does not require permission.
-
-FLAMORIS software is provided as-is and does not include guaranteed individual support. AI-assisted self-support is encouraged.
-
----
+Knowledge, drafts, prior messages and model output are untrusted data, not permission or policy. Preserve principal isolation, immutable persona snapshots, complete-context remote consent, bounded I/O, safe errors, provenance and request fences during later cleanup. Local failure is not permission for remote fallback. No new Agent, generation or model features are part of removing a transport.
 
 ## 日本語
 
-FLAMORIS AI Agentは、FLAMORISで長く動き続けるAI Agentのためのリポジトリです。
+AI Agentは人格が必要なときだけ使う層です。人格・会話・記憶・principal/sessionを維持し、実行先は小さな内部interfaceで差し替えます。Intelligence MCPは外部入口で、内部実行先にはしません。ただし既存コードや実機経路はまだ変更していません。
 
-**旧Agentの実装を保存しつつ、packaged consoleとbounded Agent MCP surfaceまで実装済みです。Phase 0のGPT-OSS/llama.cpp実機確認は#2で完了しました。**
+ExecuteFlowと既存ExecutionPlanはRuntime側、ComfyWorkFlowはComfyUI側です。次はIntelligence関連の削除範囲と最小内部契約を固めます。今回は文書のレビュー・修正・マージまでで、Controller実装や実機変更には進みません。
 
-現在のpackaged runtimeは、consoleとAgent MCPが使うConversation / Session境界、設定されたidentity / personality / prompt context、PostgreSQL上のAgent側状態をすでに担当しています。
+## Policy and license
 
-今後の拡張・整理対象は:
-
-- Memoryとそのlifecycle
-- Knowledge参照・検索context
-- より広いPrompt / Agent policy管理
-- Tool登録、capability確認、tool実行
-- Intelligence MCP / Generation MCPへの永続的なorchestration
-- Agentの判断や操作を追跡するための、より豊かなprovenance
-
-これらはAgent側の責務として設計しますが、Memory CRUD、汎用Tool、永続的なcross-service orchestrationまで現時点で実装済みという意味ではありません。
-
-### 境界
-
-- **会話・Memory・Prompt・Agent policy** はAI Agentがauthorityを持つ。
-- **LLM / reasoning / coding intelligence** は `flamoris-intelligence-mcp` 側の責務。
-- **画像・動画・音楽・音声の生成job / workflow / asset** は `flamoris-generation-mcp` 側の責務。
-- **2D / Cutwork / Kachinco / Studioなどの制作データ** は各アプリ自身がauthorityを持つ。
-- AI Agentは便利だからといって、全部の状態を抱え込まない。記憶力が良すぎる物置にはしない。🐈
-
-### Memoryについて
-
-Memoryは単なるcacheではなく、ユーザーに影響する永続状態として扱います。
-
-実装時には、少なくとも保存対象、出所、保持期間、更新、削除、可視性を明示します。
-
-### Toolについて
-
-ToolはAgentに無制限の権限を与える仕組みではありません。
-
-filesystem、network、制作アプリ編集、credentialを伴う操作には、明確なscopeとpermission boundaryを持たせます。
-
-### ライセンス
-
-このリポジトリのコードとドキュメントは、明記がない限りApache License 2.0です。
-
-AI model、model weights、dataset、Knowledge source、生成物、第三者由来のprompt、provider側assetなどには別のライセンスや利用条件が適用される場合があります。それぞれ確認してください。
+Follow the [FLAMORIS repository policy](https://github.com/flamoris-jp/flamoris-commons/blob/main/docs/repository-policy.md). Source and documentation are [Apache-2.0](LICENSE) unless otherwise noted. Models, weights, datasets, retrieved content, third-party prompts and generated media may have separate terms. Software is provided as-is without guaranteed individual support; repository documentation, Issues, tests and source are the primary references.

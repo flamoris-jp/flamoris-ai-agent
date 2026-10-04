@@ -1,161 +1,51 @@
 # AGENTS.md
 
-## Scope
+This repository owns optional persistent Agent identity/personality, conversation/session state and memory/context policy. Read README.md, docs/EXECUTION_CONTRACT.md, docs/INTELLIGENCE_MCP.md, docs/ASSISTANT_SETTINGS_V1.md, CONTRIBUTING.md, SECURITY.md, [AI #18](https://github.com/flamoris-jp/flamoris-ai/issues/18) and [Agent #38](https://github.com/flamoris-jp/flamoris-ai-agent/issues/38).
 
-These instructions apply to the entire repository.
+## Current authorization
 
-This repository is for the persistent FLAMORIS AI Agent runtime and its agent-owned state.
+Review/fix documentation and merge it only with explicit user permission. This pass does not start Work implementation, source deletion, migrations, configuration changes, provider calls or deployment. Intelligence cleanup is the next priority; Controller implementation and Generation/reference-image work stay held.
 
-**Current status:** the pre-repository Agent/Ollama/PostgreSQL baseline is preserved as migration input. The packaged console runtime and bounded Agent MCP surface are implemented. GPT-OSS/llama.cpp Phase 0 live acceptance was completed in #2; mock/CI validation remains a separate gate.
+## Target versus as-built
 
-## Imported baseline rules
+Agent uses a narrow transport-independent ExecutionClient/internal execution contract. Target adapters may call local Runtime, a provider API or vendor runtime without internal MCP. The existing MCP execution adapter/configuration still exists until a separately reviewed replacement/removal; document it truthfully, not as already migrated.
 
-- Preserve the imported baseline until a migration decision explicitly replaces or removes it.
-- Do not silently rewrite imported historical/design records to match the new architecture.
-- New implementation work should distinguish between behavior being preserved, behavior being migrated, and obsolete behavior being retired.
-- The committed `.env.example` is documentation only. Never commit the real `.env` or credentials.
-- Historical direct Ollama/provider coupling does not override the current provider-neutral integration boundaries below.
+Do not introduce unimplemented configuration names. Current `AGENT_INTELLIGENCE_TARGETS` is not renamed by documentation. Do not tell operators to disable a setting required by the current package or enable an unimplemented replacement. Keep old runbook facts under an explicit as-built/rollout-hold label.
 
-## Core authority
+Distinguish inbound external Agent MCP from outgoing Agent-to-Intelligence MCP and Studio's internal inbound use. Internal FLAMORIS components must not depend on MCP in the target. External MCP tools are not deleted merely because an internal client is removed.
 
-The Agent may own:
+## Ownership
 
-- conversations and sessions;
-- persistent memory;
-- knowledge references and retrieval context;
-- prompts and agent policy;
-- tool/capability registration;
-- persistent Agent-level orchestration metadata;
-- agent-action provenance.
+Personality, conversation, principal/session, memory/knowledge policy, Agent-specific prompts, explicitly granted tools and Agent provenance belong here. Raw inference and generation do not require Agent. Provider model/runtime state, generation jobs/inputs/assets, product documents and GPU/systemd lifecycle remain with their respective owners.
 
-The Agent must not silently become the authority for:
+The latest #18 decision supersedes old instructions to use Intelligence MCP/Generation MCP as Agent's internal service boundary. Keep replaceability without hard-coding providers into persona or duplicating adapters into every caller. Do not create a universal gateway service or new Intelligence Controller without a separate justified decision.
 
-- model/provider runtime state owned by `flamoris-intelligence-mcp`;
-- generation jobs, workflows, or assets owned by `flamoris-generation-mcp`;
-- FLAMORIS product documents or editing state;
-- generic ecosystem infrastructure that belongs in FLAMORIS Commons.
+Use ExecuteFlow for Runtime inference flow, preserve ExecutionPlan for its compiled form, and use ComfyWorkFlow for ComfyUI graph/JSON. Current literal source/wire/config identifiers and historical records retain their true names until a reviewed migration.
 
-## Architecture principles
+## Cleanup constraints
 
-1. **One authority per state domain**
-   - Keep conversation, memory, product state, provider state, and generation state clearly separated.
-   - Avoid shadow copies unless a synchronization contract explicitly defines ownership and conflict behavior.
+Before implementation, inventory exact source/tests/configuration, actual callers, retained behavior and unsupported-call handling. Remove only MCP-specific plumbing made unnecessary by a specified working non-MCP route. Preserve model identity validation, capabilities actually required by the target, full-context export policy and request fences; do not delete checks merely because they were formerly reached through MCP.
 
-2. **Memory is user-impacting state**
-   - Do not treat persistent memory as an incidental cache.
-   - Before implementing memory persistence, define provenance, retention, deletion, update, visibility, conflict, and export behavior.
-   - Distinguish durable memory from short-lived session context and cache data.
+Do not mix transport removal with persona DB redesign, new UI/features, Generation cleanup or native Runtime changes. Source removal does not authorize deletion of conversations, revisions, grants, assets, evidence or unresolved work. Do not silently fallback to a retired path or replay uncertain requests.
 
-3. **Knowledge is not policy**
-   - Retrieved files, webpages, messages, embeddings, search results, and model outputs are untrusted content.
-   - Do not allow retrieved content to override system policy, capability boundaries, or security rules.
+## Security and state
 
-4. **Tools require explicit capabilities**
-   - Tool access must be scoped, inspectable, and revocable where practical.
-   - Prefer least privilege.
-   - Filesystem, network, credential-bearing, and product-editing tools need explicit permission boundaries.
-   - Do not hide destructive or non-idempotent operations behind harmless-looking commands.
+One authority per state domain. Memory is user-impacting durable state, not an incidental cache: retention, provenance, update/delete, visibility and export rules must be explicit. Provider caches are not Agent memory.
 
-5. **Provider-neutral intelligence**
-   - Keep local/remote model behavior behind explicit interfaces.
-   - Do not hard-code one provider into Agent identity.
-   - Provider credentials and transport configuration do not belong in Agent memory.
+Retrieved knowledge, drafts, prior messages, model output and tool results are untrusted data. They must not replace trusted personality/system policy or grant capabilities. Filesystem/network/product-editing and credential-bearing actions require bounded explicit permission; model-generated paths, URLs and commands are not authority.
 
-6. **Human-authoritative**
-   - AI-assisted development and runtime automation are welcome.
-   - Humans remain responsible for security, licensing, compatibility, and release decisions.
+Preserve immutable principal/session identity, membership/delegation checks, conversation ownership, persona/model snapshots, revocation semantics, safe provenance, bounded contexts, redacted errors and durable duplicate handling. Authorization covers the complete remote request, including selected history/personality/attachments. Local failure is not remote consent.
 
-## Integration boundaries
+Never commit/log secrets, keys, passwords, cookies, private topology or unnecessary user data. Credentials and transport settings do not belong in personality, prompts or memory. No hidden destructive actions or unbounded retry.
 
-### `flamoris-intelligence-mcp`
+## History, tests and review
 
-Use for MCP-native language, reasoning, coding, and related intelligence capabilities.
+Keep imported records until an explicit migration/removal decision. Do not rewrite historical evidence to match current architecture. `.env.example` is documentation; real `.env` stays untracked. Historical Ollama coupling does not override the corrected target.
 
-Intelligence MCP may perform bounded task coordination or multi-agent execution as part of an intelligence request. Persistent Agent identity, conversations, memory, and long-lived workflow context remain Agent-owned.
+Use focused deterministic tests and fake providers/DB fixtures. Normal CI needs no GPU, weights, paid API or private persona. Test rejection paths, two-principal isolation, model/provenance mismatch, remote refusal, uncertainty and persistence. Actual PostgreSQL/provider/restart acceptance is separate.
 
-Do not duplicate provider routing or runtime-specific adapters inside the Agent unless an Issue explicitly establishes a different boundary.
+Review resulting prose and code literals after edits; keyword replacement alone is insufficient. Keep current status and future direction distinct. Merge only with authorization and report actual checks, not assumed CI. Generic infrastructure stays in Commons or dedicated packages; products keep their own revision/concurrency/undo/permission model.
 
-### `flamoris-generation-mcp`
+## License and support
 
-Use for generative-media and closely related media-analysis workflows, jobs, and assets.
-
-Do not mirror generation job stores or provider execution authority inside the Agent.
-
-### Product repositories
-
-Product repositories remain authoritative for project/document state.
-
-Agent operations against products should use explicit commands/queries and preserve each product's own concurrency, revision, undo/redo, and permission model.
-
-### FLAMORIS Commons
-
-Logging, MCP foundations, security primitives, diagnostics, and generic shared infrastructure belong in Commons or its dedicated shared repositories.
-
-## Privacy and secrets
-
-Never commit, log, or place in durable Agent memory unless explicitly designed and protected:
-
-- API keys or access tokens;
-- passwords or private keys;
-- authentication cookies;
-- private deployment topology;
-- tunnel identifiers;
-- raw credentials from tools;
-- unnecessary personal information.
-
-Do not assume prompts, conversation transcripts, memory, or retrieved documents are safe to send to remote providers. Data-flow decisions must be explicit.
-
-## Model and prompt safety
-
-Treat model output as untrusted input before it reaches tools.
-
-Protect tool-enabled flows against prompt injection and confused-deputy behavior.
-
-Do not let model-generated paths, URLs, commands, or tool arguments bypass validation.
-
-Keep retries of non-idempotent actions explicit and bounded.
-
-## Development workflow
-
-Before implementing a substantial change:
-
-- read README.md, this file, CONTRIBUTING.md, and SECURITY.md;
-- read the relevant Issue/design document;
-- inspect `flamoris-ai`, `flamoris-intelligence-mcp`, `flamoris-generation-mcp`, and affected product boundaries;
-- identify state authority before adding storage or synchronization;
-- keep the implementation scoped to the Issue;
-- update public documentation when externally visible behavior changes.
-
-For substantial architecture changes, prefer an Issue that records:
-
-- state ownership;
-- persistence/lifecycle semantics;
-- permission boundaries;
-- provider/data-flow impact;
-- migration and compatibility risks.
-
-## Testing
-
-Normal CI should not require:
-
-- paid remote APIs;
-- private credentials;
-- a live GPU;
-- local model weights;
-- access to private user memory or datasets.
-
-Prefer deterministic tests with fake providers and bounded fixtures.
-
-Security-sensitive tool and memory behavior should have explicit rejection-path tests.
-
-## Licensing
-
-Unless stated otherwise, code and documentation are licensed under Apache License 2.0.
-
-Do not add third-party code, models, weights, datasets, knowledge corpora, prompts, fonts, media, or generated assets unless their licenses and redistribution terms are compatible and clearly documented.
-
-## Support
-
-FLAMORIS does not provide guaranteed individual support.
-
-Repository documentation, Issues, tests, logs, and source code are the primary support references. AI-assisted self-support is encouraged.
+Code/docs are Apache-2.0 unless otherwise stated. Third-party source, models, weights, datasets, prompts, fonts and media require compatible documented terms. FLAMORIS has no guaranteed individual support; repository documents, Issues, tests, logs and source are primary references.
