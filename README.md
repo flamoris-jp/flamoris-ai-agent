@@ -76,9 +76,7 @@ An [explicit bounded owner retirement operation](docs/PRINCIPAL_RETENTION.md)
 preserves conversation history and request fences while retiring eligible expired
 authorization bindings; it is not automatically enabled.
 
-The [approved Intelligence MCP adapter](docs/INTELLIGENCE_MCP.md) is explicitly
-configurable for local-only bounded execution. Default direct execution stays
-compatible; no automatic fallback or remote transcript export is added.
+The historical [Intelligence MCP adapter](docs/INTELLIGENCE_MCP.md) remains documented only as a migration baseline. FLAMORIS AI #18 rejects it as the future internal dependency. Agent keeps a narrow non-MCP execution boundary so local Runtime, direct API, or vendor-runtime implementations can be replaced without routing internal calls through MCP.
 Shared HTTP additionally supports [bounded Image context and scoped ask availability](docs/STUDIO_CONTEXT_V1.md).
 
 Run `flamoris-agent-mcp` for stdio MCP, using the same environment/runtime
@@ -144,13 +142,13 @@ These are boundaries, not mandatory layers.
 
 [flamoris-intelligence-mcp](https://github.com/flamoris-jp/flamoris-intelligence-mcp) is the implemented MCP-native, provider-neutral gateway for bounded language, reasoning, coding, and related intelligence capabilities. Its Phase 1 runtime is mock/CI validated; live deployment acceptance remains a separate check.
 
-The Agent may use it, but should not absorb model/provider runtime ownership. If Intelligence MCP performs bounded task coordination or multi-agent execution inside an intelligence request, the Agent still remains the authority for persistent Agent identity, conversation, memory, and long-lived workflow context.
+The Agent does not use Intelligence MCP as its canonical internal execution dependency. Intelligence MCP is an external ChatGPT-facing facade. Agent uses its own bounded non-MCP execution interface and still must not absorb unrelated host/runtime authority. If Intelligence MCP performs bounded task coordination or multi-agent execution inside an intelligence request, the Agent still remains the authority for persistent Agent identity, conversation, memory, and long-lived workflow context.
 
 ### FLAMORIS Generation MCP
 
 [flamoris-generation-mcp](https://github.com/flamoris-jp/flamoris-generation-mcp) owns generative-media and closely related media-analysis workflows, jobs, and assets.
 
-The Agent may request generation, but should not become a second owner of generation job state.
+The Agent may later request generation through the reviewed internal generation boundary when personality-driven generation is desired, but generation is not a mandatory Agent path and Agent must not become a second owner of generation job state.
 
 ### Product repositories
 
@@ -180,8 +178,9 @@ Shared infrastructure that is not specifically Agent-domain logic belongs in [FL
    - Knowledge sources, webpages, files, messages, and model outputs may contain malicious or misleading instructions.
    - Retrieved content must not silently redefine system policy or tool permissions.
 
-5. **Provider-neutral intelligence access**
-   - Local and remote models should be replaceable behind explicit interfaces.
+5. **Replaceable non-MCP intelligence access**
+   - Local Runtime, direct API, and vendor-runtime implementations should be replaceable behind the Agent's narrow execution interface.
+   - MCP is not the internal provider interface.
    - Provider names should not become the Agent's public architecture.
 
 6. **Human-authoritative**
@@ -250,3 +249,8 @@ filesystem、network、制作アプリ編集、credentialを伴う操作には�
 このリポジトリのコードとドキュメントは、明記がない限りApache License 2.0です。
 
 AI model、model weights、dataset、Knowledge source、生成物、第三者由来のprompt、provider側assetなどには別のライセンスや利用条件が適用される場合があります。それぞれ確認してください。
+
+
+## Architecture correction status
+
+FLAMORIS AI #18 defines Agent as the optional personality/conversation layer. Ordinary inference and generation do not require Agent. The next implementation cleanup should remove the internal `Agent -> Intelligence MCP` path and MCP-specific target plumbing while preserving personality, conversation, principal isolation, remote-context consent, provenance, request fences, and the existing narrow `ExecutionClient` contract. No implementation is authorized by this documentation PR alone.
