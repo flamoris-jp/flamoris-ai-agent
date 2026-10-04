@@ -1,107 +1,63 @@
-# Approved Intelligence MCP execution
+# Legacy internal Intelligence MCP adapter
 
-Owning issue: [#24](https://github.com/flamoris-jp/flamoris-ai-agent/issues/24).
-This explicitly configured adapter consumes the current synchronous Intelligence
-contract at commit `043b39b064fbedf9ed9a3e9e9eb57c6856efbb5c`. It preserves
-AgentSession conversation/prompt/persistence authority. It creates no provider job,
-Agent memory, runtime activation, tools, routing registry or automatic fallback.
+Status: **deprecated target architecture**. This document records the current/previous migration implementation only.
 
-## Configuration and authority
+FLAMORIS AI [#18](https://github.com/flamoris-jp/flamoris-ai/issues/18) and Agent [#38](https://github.com/flamoris-jp/flamoris-ai-agent/issues/38) supersede the design that made Intelligence MCP the Agent's internal execution dependency.
 
-Default `AGENT_INTELLIGENCE_TRANSPORT=direct` keeps the temporary direct llama.cpp
-console/MCP behavior. Explicit `mcp` requires `AGENT_INTELLIGENCE_MCP_ENDPOINT`
-and JSON `AGENT_INTELLIGENCE_TARGET`. Unknown modes or incomplete configuration
-fail closed; MCP failure never selects direct mode. All configuration is operator
-controlled, never an ask argument or model-generated value. No credentials or
-provider endpoints belong in the target mapping or conversation context.
+## Correct target
 
-Example target (replace aliases deliberately; this does not register a DB model):
-
-```json
-{"public_model_id":"gpt-oss-20b","provider_id":"llamacpp","db_model_name":"served-alias","db_provider":"llama.cpp","data_flow":"local_only"}
+```text
+AI Agent
+   ↓
+non-MCP ExecutionClient / internal execution interface
+   ├─ local FLAMORIS AI Runtime
+   ├─ direct provider API such as OpenAI Responses
+   └─ vendor runtime
 ```
 
-Required public ID/provider are exact Intelligence discovery pins. DB identity is
-an explicit approved translation; public aliases are not assumed to equal served
-model names. Existing runtime model validation compares this resolved identity
-with the deployment's DB model reference before creating a conversation. Select
-a new configured session/runtime model registration deliberately for any change;
-never mutate the identity of a started turn.
+Intelligence MCP remains an external MCP facade used through the ChatGPT/MCP Hub path. Agent must not call it internally merely to reuse provider adapters.
 
-Optional target fields: capability_id (text.generate, reasoning.generate or
-code.generate; default text.generate), max_input_bytes (default/hard ceiling
-65536), context_tokens (default 32768, 1024–1048576), max_output_tokens
-(default 1024, 1–4096) and timeout_seconds (default/hard ceiling 120). The tighter
-configured/discovered limit wins; an output budget above discovery is refused.
+## Current implementation baseline
 
-`data_flow` is required and currently accepts only `local_only`. The operator
-must verify that the configured MCP's downstream provider keeps the entire
-assembled request local, including personality and selected previous transcript.
-The current Intelligence discovery does not attest locality. This is an explicit
-deployment trust requirement, not an inference from an endpoint hostname. Remote
-targets/export policy and per-principal target selection remain unsupported in
-this slice. Configuring a remote URL alone never authorizes transcript export.
+Current main may still contain:
 
-The current Intelligence HTTP listener has no application authentication and is
-loopback-only. Use the actual approved private deployment endpoint; remote access
-needs a separately reviewed authenticated boundary. No Hub configuration or live
-service change is performed by this adapter. HTTP credentials embedded in URLs,
-queries/fragments, redirects and environment proxies are rejected/disabled.
+- `AGENT_INTELLIGENCE_TRANSPORT=mcp`;
+- MCP endpoint/target configuration;
+- model/capability discovery against Intelligence MCP;
+- the MCP request/result adapter;
+- locality/data-flow checks written around that transport.
 
-## Prompt, budget and result behavior
+These are migration inputs for removal, not the desired future architecture.
 
-Resolution checks exact models.get/capabilities.get identities and synchronous
-inference.execute support, then provider availability in system.health. These
-checks run within 15 seconds without inference or runtime activation. Configuration
-metadata plus provider reachability does not prove an alias is loaded; final
-execution may still reject it. This resolution is not a Studio availability API.
+## What must be preserved during cleanup
 
-The trusted first system message becomes instruction. Previous transcript and
-current user/assistant history become a JSON agent_messages_v1 input envelope;
-their role labels/content remain untrusted data. Additional system messages are
-refused. No transcript data is promoted to trusted instruction. The adapter sends
-one synchronous inference.execute, with no hidden tool/prompt/provider selection.
+Removing the internal MCP path must not remove the Agent's real safety/state guarantees:
 
-Validation covers input envelope/policy serialization overhead, the existing 64 KiB
-combined limit, the tighter approved byte limit, Intelligence's conservative
-bytes+512+output_tokens context heuristic, and a 128 KiB serialized request ceiling
-(including JSON escaping). AgentSession validates startup context before
-conversation creation and the assembled question before user persistence. No
-truncation silently changes meaning. Model/provider validation still occurs in DB.
+- personality and immutable conversation snapshots;
+- principal/session authorization and isolation;
+- complete-context remote export consent;
+- model/provider provenance;
+- input/output/context/time bounds;
+- no hidden fallback or retry after ambiguous acceptance;
+- durable request/duplicate fences;
+- fixed safe errors and secret redaction;
+- continuation identity and model consistency.
 
-The execution deadline covers MCP initialization/dispatch/response/cleanup and
-is at most 120 seconds. Each call owns/closes its SDK task groups in its own scope;
-no SDK cancel scope survives into shielded Agent cleanup. Incremental response
-transport has a 1 MiB ceiling, rejects compressed representations and prevents
-SDK same-origin redirect replay. No inference POST is retried. Cursor-free SDK
-observation/resumption does not grant permission for another inference attempt.
+## What the next implementation pass should remove first
 
-Only matching public provider/model/capability results with a valid execution UUID,
-bounded nonblank text, consistent optional usage and finish_reason=stop succeed.
-Length-terminated output returns incomplete_output, preserving an admitted user
-turn/duplicate fence while omitting assistant-success persistence. Empty or invalid
-output is refused. Correlation UUID is provenance, never an upstream job/recovery API.
+1. MCP-specific internal transport selection and endpoint configuration.
+2. Intelligence MCP discovery/dispatch from the Agent execution path.
+3. MCP-only public-model/provider translation that exists solely because of that hop.
+4. Documentation/tests that require `Agent -> Intelligence MCP` as the target dependency direction.
 
-DB provenance retains the approved runtime identity. MCP responses use validated
-public model/provider IDs plus execution correlation, avoiding private DB aliases.
-Adapter-scoped SDK logs redact transport messages/exception details; fixed error
-codes cross the Agent boundary. Do not enable external provider/wire logging of
-private prompts. Cancellation/disconnect cannot prove remote work stopped and
-never trigger another attempt or a fabricated answer.
+Keep or reuse the narrow transport-independent `ExecutionClient` request/result boundary. Re-introduce provider adapters only behind that internal boundary, with the smallest implementation needed for the actual local Runtime/API targets.
 
-## Verification and remaining gates
+Do not redesign personality, DB state, Studio UI, AI Runtime kernel, or generation in the same cleanup.
 
-Offline tests run actual in-process Streamable HTTP MCP negotiation/discovery and
-execution with bounded fixture handlers. They cover mapping, transcript separation,
-model/capability mismatch, unavailable provider, final serialization/context bounds,
-partial/empty/oversized/malformed results, no replay, cancellation/cleanup, transport
-limits/redirects/compression and SDK log privacy. Existing PostgreSQL isolation,
-package/wheel/container gates remain required. No real provider smoke is implied.
+## Compatibility
 
-The optional Image context and scoped read-only prerequisite availability contract
-are specified in [STUDIO_CONTEXT_V1.md](STUDIO_CONTEXT_V1.md).
+Existing deployments may still use the MCP adapter until a separately authorized implementation and rollout replaces it. Documentation changes do not alter live configuration. Do not silently fall back between old and new paths.
 
-Remaining #24 work: complete classified remote
-export policy/targets, Studio account mapping
-and two-principal/live Intelligence acceptance. Shared Studio assistance remains
-disabled until those owning gates are met.
+## Historical note
+
+The previous detailed MCP adapter specification is preserved in Git history and linked Issues/PRs. It should not be copied into new design documents as active architecture.
