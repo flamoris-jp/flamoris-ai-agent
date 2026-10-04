@@ -16,7 +16,7 @@ class AvailabilityProbe:
         self.model_settings = model_settings
 
     async def __call__(self, binding):
-        if os.getenv("AGENT_INTELLIGENCE_TRANSPORT", "direct") != "mcp":
+        if not self.model_settings and not os.getenv("AGENT_INTELLIGENCE_TARGET"):
             raise IntelligenceError("dependencies_unknown")
         # Construct configuration/client only. AgentSession.start/ask are never called.
         option = self.model_settings.require(binding) if self.model_settings else None

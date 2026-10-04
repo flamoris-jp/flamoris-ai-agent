@@ -54,11 +54,11 @@ no truncation or background attachment retrieval. Uncertain calls retain their
 original snapshot and request UUID and never reassemble/replay a newer draft.
 There is still no request recovery/status or cached-answer API.
 
-Context-bearing configured execution requires the explicitly approved `mcp`
-transport and required local_only target policy from
-[INTELLIGENCE_MCP.md](INTELLIGENCE_MCP.md). Direct mode has no reviewed complete
-context-export qualification and refuses context_unavailable before dispatch.
-Remote targets/classified transcript export remain unsupported.
+Context-bearing execution requires an explicitly approved direct target from
+[INTERNAL_EXECUTION.md](INTERNAL_EXECUTION.md). The unclassified console path
+refuses context_unavailable before dispatch. Remote settings targets still require
+current grants and complete-context consent; legacy/local-only transcript export
+remains forbidden. The outgoing MCP mode is retired and never used as fallback.
 
 ## ask_availability
 
@@ -75,9 +75,9 @@ no principal/model topology or active request identity is returned. Observations
 expire 5 seconds after the bounded probe completes; they never reserve admission
 or guarantee future success. Recheck current authorization/limits on every ask.
 
-One prerequisite probe per process, bounded to 15 seconds, checks explicit MCP
-configuration, selected Agent personality bounds, exact Intelligence model/
-capability discovery, provider reachability, current principal/runtime DB references
+One prerequisite probe per process, bounded to 15 seconds, checks explicit direct
+configuration, selected Agent personality bounds, exact served model discovery,
+provider reachability, current principal/runtime DB references
 and approved model identity. Authorization is checked again after the probe.
 If an ask starts during the probe, its result is busy; shutdown/revocation cannot
 produce ready. No conversation/instance/message writes, private transcript reads,

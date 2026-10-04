@@ -11,6 +11,7 @@ httpcore==1.0.9
 httpcore2==2.13.1
 httpx==0.28.1
 httpx2==2.13.1
+flamoris-intelligence-mcp==0.2.0
 idna==3.20
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1

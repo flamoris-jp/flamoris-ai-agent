@@ -33,7 +33,12 @@ def test_resolution_payload_and_identity():
             200,
             json={
                 "model": "served",
-                "choices": [{"message": {"role": "assistant", "content": "こんにちは"}}],
+                "choices": [
+                    {
+                        "message": {"role": "assistant", "content": "こんにちは"},
+                        "finish_reason": "stop",
+                    }
+                ],
             },
         )
 
@@ -49,6 +54,8 @@ def test_resolution_payload_and_identity():
         "messages": MESSAGES,
         "stream": False,
         "max_tokens": 4096,
+        "temperature": 0.7,
+        "n": 1,
     }
 
 
@@ -70,7 +77,7 @@ def test_model_rejection(body, code):
     [
         (
             httpx.Response(302, headers={"location": "https://private-secret"}),
-            "provider_unavailable",
+            "provider_rejected",
         ),
         (httpx.Response(500, text="secret prompt"), "provider_unavailable"),
         (httpx.Response(200, content=b"x" * 1048577), "response_too_large"),
@@ -80,7 +87,7 @@ def test_model_rejection(body, code):
             httpx.Response(
                 200, json={"choices": [{"message": {"role": "assistant", "content": "x" * 65537}}]}
             ),
-            "output_too_large",
+            "response_too_large",
         ),
     ],
 )

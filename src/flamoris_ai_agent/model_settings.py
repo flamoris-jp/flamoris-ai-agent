@@ -7,7 +7,7 @@ import os
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, model_validator
 
 from .execution import IntelligenceError
-from .intelligence_mcp import ApprovedTarget
+from .execution_target import ApprovedTarget
 
 
 class ModelOption(BaseModel):
@@ -35,7 +35,19 @@ class ModelOption(BaseModel):
     @property
     def digest(self):
         # Endpoint/registry changes invalidate sessions; credentials are absent.
-        payload = [self.model_dump(), os.getenv("AGENT_INTELLIGENCE_MCP_ENDPOINT", "")]
+        payload = [
+            "direct-execution-v1",
+            self.model_dump(),
+            os.getenv("INTELLIGENCE_BASE_URL", "http://127.0.0.1:8081"),
+            {
+                name: os.getenv("FLAMORIS_INTELLIGENCE_" + name.upper(), "")
+                for name in (
+                    "openai_input_usd_per_million",
+                    "openai_output_usd_per_million",
+                    "openai_max_request_usd",
+                )
+            },
+        ]
         return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
 
 

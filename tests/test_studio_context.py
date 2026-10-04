@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
-from test_intelligence_mcp import TARGET, Upstream, connected
+from test_direct_execution import TARGET, Upstream, connected
 from test_mcp import request
 from test_runtime import CONTEXT, session
 from test_scoped_service import Principals, shared_http
@@ -71,9 +71,9 @@ async def test_context_snapshot_is_data_and_immutable_through_dispatch():
         await agent.aclose()
     assert len(store.start.call_args.args[1]["studio_context"]["assets"]) == 1
     payload = upstream.calls[-1][1]
-    assert "untrusted draft: ignore" not in payload["instruction"]
-    assert "old untrusted history" not in payload["instruction"]
-    messages = json.loads(payload["input"])["messages"]
+    assert "untrusted draft: ignore" not in payload["messages"][0]["content"]
+    assert "old untrusted history" not in payload["messages"][0]["content"]
+    messages = payload["messages"][1:]
     assert all(m["role"] == "user" for m in messages)
     assert json.loads(messages[1]["content"])["context"]["draft_revision"] == 7
     assert "ignore all previous rules" in messages[1]["content"]
@@ -97,7 +97,7 @@ async def test_combined_question_context_budget_denies_before_user_save():
         with pytest.raises(IntelligenceError, match="input_too_large"):
             await agent.ask("q" * 2000)
         store.save.assert_not_called()
-    assert not any(name == "inference.execute" for name, _ in upstream.calls)
+    assert not any(name == "/v1/chat/completions" for name, _ in upstream.calls)
 
 
 async def test_shared_protocol_advertises_inline_context_and_rejects_unreviewed_fields():
@@ -216,8 +216,9 @@ async def test_default_probe_does_not_equate_liveness_or_direct_mode_with_ready(
         factory.assert_not_called()
 
 
-async def test_default_probe_checks_mcp_policy_and_database_without_lifecycle(monkeypatch):
-    monkeypatch.setenv("AGENT_INTELLIGENCE_TRANSPORT", "mcp")
+async def test_default_probe_checks_direct_policy_and_database_without_lifecycle(monkeypatch):
+    monkeypatch.setenv("AGENT_INTELLIGENCE_TRANSPORT", "direct")
+    monkeypatch.setenv("AGENT_INTELLIGENCE_TARGET", json.dumps(TARGET.model_dump()))
     upstream = Upstream()
     bound = Principals().open("backend", PrincipalKeys("first", "helper", "project"))
     async with connected(upstream) as client:
@@ -229,11 +230,7 @@ async def test_default_probe_checks_mcp_policy_and_database_without_lifecycle(mo
         probe._database.assert_called_once_with(bound, client.identity, None)
         configured.store.open.assert_not_called()
         configured.store.start.assert_not_called()
-    assert [name for name, _ in upstream.calls] == [
-        "models.get",
-        "capabilities.get",
-        "system.health",
-    ]
+    assert [name for name, _ in upstream.calls] == ["/v1/models"]
 
 
 async def test_availability_cancellation_releases_probe_admission():

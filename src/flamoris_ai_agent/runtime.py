@@ -217,29 +217,32 @@ class AgentSession:
 def configured_session(
     *, store=None, context_loader=prompts.load_system_context, context=None, target=None
 ):
-    mode = os.getenv("AGENT_INTELLIGENCE_TRANSPORT", "direct")
-    if (context is not None or target is not None) and mode != "mcp":
-        raise IntelligenceError("context_unavailable")
-    if mode == "mcp":
-        from flamoris_ai_agent.intelligence_mcp import ApprovedTarget, IntelligenceMCPClient
+    # Retired settings must fail rather than silently redirect uncertain work.
+    if os.getenv("AGENT_INTELLIGENCE_TRANSPORT", "direct") != "direct" or os.getenv(
+        "AGENT_INTELLIGENCE_MCP_ENDPOINT"
+    ):
+        raise IntelligenceError("invalid_intelligence_configuration")
+    selected = target is not None
+    if target is not None or os.getenv("AGENT_INTELLIGENCE_TARGET"):
+        from flamoris_ai_agent.direct_execution import ApprovedExecutionClient
+        from flamoris_ai_agent.execution_target import ApprovedTarget
 
         try:
-            selected = target is not None
             target = target or ApprovedTarget.model_validate(
                 json.loads(os.environ["AGENT_INTELLIGENCE_TARGET"])
             )
             if not selected and target.data_flow != "local_only":
                 raise IntelligenceError("remote_export_forbidden")
-            client = IntelligenceMCPClient(os.environ["AGENT_INTELLIGENCE_MCP_ENDPOINT"], target)
+            client = ApprovedExecutionClient(target)
         except (ValueError, TypeError, KeyError):
             raise IntelligenceError("invalid_intelligence_configuration") from None
-    elif mode == "direct":
+    else:
+        if context is not None:
+            raise IntelligenceError("context_unavailable")
         client = IntelligenceClient(
             os.getenv("INTELLIGENCE_BASE_URL", "http://127.0.0.1:8081"),
             os.getenv("INTELLIGENCE_MODEL"),
         )
-    else:
-        raise IntelligenceError("invalid_intelligence_configuration")
     return AgentSession(
         client,
         store if store is not None else PostgresStore(),
