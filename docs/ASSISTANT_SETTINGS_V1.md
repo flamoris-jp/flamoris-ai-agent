@@ -2,9 +2,7 @@
 
 Owners: Agent #34/#35; AI #17; Studio #56; Intelligence #8.
 
-Agent owns personality identity/revisions, model/export grants and conversation snapshots.
-Studio authenticates its account, maps it through its existing server-side binding and
-renders an editor. Intelligence owns configured providers/credentials. No new gateway repo.
+Agent owns personality identity/revisions, model/export grants and conversation snapshots. Studio authenticates its account, maps it through its existing server-side binding and renders an editor. Execution targets are reached through Agent's bounded non-MCP execution interface; provider credentials stay in operator-controlled adapter/runtime configuration. No new gateway repository is implied.
 
 ## Contract and admission
 
@@ -14,7 +12,7 @@ and fixed local configuration remain unchanged when disabled. New `sessions.open
 fields are optional `model_id` and `remote_consent`; legacy omission chooses the
 operator `AGENT_DEFAULT_MODEL_ID`. The settings catalog is negotiated exactly.
 
-`AGENT_INTELLIGENCE_TARGETS` is a bounded array (1..16) of id, display_name,
+`AGENT_EXECUTION_TARGETS` is a bounded array (1..16) of id, display_name,
 model_key, target (the existing approved-target fields). IDs and model keys are
 unique. Remote targets use data_flow=remote_authorized, provider_id=openai and
 require both an operator model grant allow_remote=true and explicit user consent.
@@ -73,8 +71,7 @@ current revision, any required historical recovery and save UUID fences (otherwi
 updates can replay). No automatic pruning/expiration. Principal option rows follow the
 existing guarded principal retirement; conversation snapshots and request fences remain.
 
-Runtime settings use one process and existing bounded execution. API requests have
-input/output/time/concurrency and operator per-request USD ceilings in Intelligence;
+Runtime settings use one process and existing bounded execution. Remote API adapters must preserve input/output/time/concurrency and operator per-request cost ceilings;
 usage reports token counts. These are per request, not monthly billing guarantees.
 Timeout/cancel may leave remote work billable; never replay an uncertain inference.
 
@@ -97,10 +94,14 @@ Import each existing personality with
 The importer validates and compares ordered bodies and preserves original files.
 Provision core.model_grants and core.personality_grants as the owner, using exact
 registered UUIDs. Runtime credentials can read grants but cannot mutate them.
-Enable AGENT_CONTEXT_SOURCE=db, AGENT_INTELLIGENCE_TRANSPORT=mcp and
-AGENT_SETTINGS_ENABLED=1. Set AGENT_DEFAULT_MODEL_ID to an authorized local ID;
+Enable AGENT_CONTEXT_SOURCE=db and AGENT_SETTINGS_ENABLED=1. Do **not** enable or require `AGENT_INTELLIGENCE_TRANSPORT=mcp`; that internal path is deprecated by FLAMORIS AI #18. Configure only the reviewed non-MCP execution adapter required by the deployment. Set AGENT_DEFAULT_MODEL_ID to an authorized local ID;
 external selection always requires explicit consent. Validate new/continued
 conversation revisions and two users before enabling the matched Studio flag.
 Grant reads linearize at admission. Saves reauthorize after acquiring the persona
 head lock; a later grant revocation cannot retrospectively cancel an admitted save.
 Principal-session revocation serializes with the existing binding lock.
+
+
+## Architecture correction
+
+This settings contract predates the internal-MCP correction. Model choice and remote-export consent remain valid Agent responsibilities, but the selected target must dispatch through the Agent's non-MCP execution interface. Intelligence MCP discovery or endpoint configuration must not be part of the future Agent settings contract.
