@@ -17,11 +17,11 @@ Separate external path:
 ChatGPT -> MCP Hub -> Intelligence MCP -> approved internal capability
 ```
 
-Existing Agent/Studio MCP paths have not been removed by these docs. The [legacy adapter record](docs/INTELLIGENCE_MCP.md) is an as-built migration reference, not the future route. Preserve the transport-independent [ExecutionClient boundary](docs/EXECUTION_CONTRACT.md), decide the smallest working replacement, then remove internal MCP-only coupling under a separately authorized implementation task.
+The [internal HTTP and direct execution contract](docs/INTERNAL_EXECUTION.md) is implemented: Studio uses `/api/v1`, and approved execution targets reuse the shared non-MCP Intelligence provider library. The outgoing Intelligence MCP client was deleted. The transport-independent [ExecutionClient boundary](docs/EXECUTION_CONTRACT.md) and Agent state/consent/fences remain authoritative.
 
 An inbound external Agent MCP adapter and an outbound Agent-to-Intelligence MCP client are different things. Removing the latter does not authorize deleting every external MCP tool. Studio's internal inbound MCP use also needs its own caller/contract audit.
 
-Current work is documentation review/fixes and explicitly requested documentation merges only. No code/DB/configuration/deployment changes. Generation Controller remains unimplemented; Generation/ComfyWorkFlow/reference-image work stays paused. Intelligence cleanup comes first.
+The user authorized source cleanup and internal connections. This changes no DB schema, grants or saved conversations and performs no deployment or paid inference. Generation Controller remains unimplemented; Generation/ComfyWorkFlow/reference-image expansion stays paused.
 
 ## Existing contracts
 
@@ -34,7 +34,7 @@ Current work is documentation review/fixes and explicitly requested documentatio
 - [Corrected Studio design](docs/STUDIO_ASSISTANT.md)
 - [Docker reference](docs/DOCKER.md)
 
-Deployment commands in existing runbooks describe the as-built service and are not an authorization to switch it during this documentation pass. Do not invent replacement configuration names or disable a required legacy adapter solely because the target architecture changed.
+Existing deployment runbooks do not authorize live cutover. Review the exact configuration migration and preserved state/fences in the internal contract before any separately authorized rollout.
 
 ## Baseline and layout
 
@@ -77,9 +77,9 @@ Knowledge, drafts, prior messages and model output are untrusted data, not permi
 
 ## 日本語
 
-AI Agentは人格が必要なときだけ使う層です。人格・会話・記憶・principal/sessionを維持し、実行先は小さな内部interfaceで差し替えます。Intelligence MCPは外部入口で、内部実行先にはしません。ただし既存コードや実機経路はまだ変更していません。
+AI Agentは人格が必要なときだけ使う層です。人格・会話・記憶・principal/sessionを維持し、Studioは内部HTTP、推論は共有の非MCPアダプターで接続します。外向けMCP入口は維持し、内部Intelligence MCPクライアントは削除しました。実機の切替は行っていません。
 
-ExecuteFlowと既存ExecutionPlanはRuntime側、ComfyWorkFlowはComfyUI側です。次はIntelligence関連の削除範囲と最小内部契約を固めます。今回は文書のレビュー・修正・マージまでで、Controller実装や実機変更には進みません。
+ExecuteFlowと既存ExecutionPlanはRuntime側、ComfyWorkFlowはComfyUI側です。Controller実装や実機変更は今回の範囲に含めません。
 
 ## Policy and license
 

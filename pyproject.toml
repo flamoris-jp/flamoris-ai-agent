@@ -9,7 +9,7 @@ description = "Persistent FLAMORIS Agent runtime"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
-dependencies = ["httpx>=0.28,<1", "httpx2>=2.13,<3", "psycopg[binary]>=3.2,<4", "python-dotenv>=1,<2", "mcp>=2.2,<3", "pydantic>=2.11,<3", "starlette>=1.7,<2", "uvicorn>=0.54,<1"]
+dependencies = ["httpx>=0.28,<1", "httpx2>=2.13,<3", "psycopg[binary]>=3.2,<4", "python-dotenv>=1,<2", "mcp>=2.2,<3", "pydantic>=2.11,<3", "starlette>=1.7,<2", "uvicorn>=0.54,<1", "flamoris-intelligence-mcp @ https://github.com/flamoris-jp/flamoris-intelligence-mcp/archive/5da9736e60c29ed549d16656ff7acac5d54bdb83.zip"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.14,<1", "build>=1.2,<2"]
@@ -25,6 +25,9 @@ flamoris-agent-mcp = "flamoris_ai_agent.server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/flamoris_ai_agent"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel.force-include]
 "agents" = "flamoris_ai_agent/agents"

@@ -71,6 +71,9 @@ async def test_http_rejects_before_dispatch(headers, status):
         result = await client.post("/mcp", headers=headers, content=b"private-prompt")
         assert result.status_code == status
         assert "secret" not in result.text and "private-prompt" not in result.text
+        result = await client.post("/api/v1/ask", headers=headers, content=b"private-prompt")
+        assert result.status_code == status
+        assert "secret" not in result.text and "private-prompt" not in result.text
     factory.assert_not_called()
 
 
@@ -106,3 +109,46 @@ def test_http_settings_environment(monkeypatch):
     monkeypatch.setenv("AGENT_HTTP_ALLOWED_HOSTS", "*")
     with pytest.raises(ValueError, match="invalid_http_configuration"):
         HTTPSettings.from_env()
+
+
+async def test_internal_http_uses_plain_json_and_the_same_service_lifecycle():
+    instances = []
+
+    def factory(req):
+        instance = session()
+        instances.append(instance)
+        return instance
+
+    service = AgentService(factory)
+    async with http(service) as client:
+        caps = (await client.get("/api/v1/capabilities")).json()
+        assert caps == {"ok": True, "api_version": 1, "operations": ["health", "ask"]}
+        assert (await client.get("/api/v1/health")).json() == service.health()
+        response = await client.post("/api/v1/ask", json=request())
+        assert response.status_code == 200 and response.json()["text"] == "answer"
+        assert "jsonrpc" not in response.json()
+        assert not service.closing
+    assert service.closing and len(instances) == 1
+    instances[0].store.close.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "content,status",
+    [
+        (b'{"text":"private","text":"other"}', 400),
+        (b'{"text":NaN}', 400),
+        (b"[]", 400),
+        (b"\xff", 400),
+        (b"[" * 1000 + b"0" + b"]" * 1000, 400),
+        (b"x" * 131073, 413),
+    ],
+)
+async def test_internal_http_rejects_malformed_and_oversized_json_before_dispatch(content, status):
+    factory = Mock(side_effect=AssertionError("must not reach runtime"))
+    async with http(AgentService(factory)) as client:
+        result = await client.post(
+            "/api/v1/ask", content=content, headers={"Content-Type": "application/json"}
+        )
+        assert result.status_code == status and result.json()["ok"] is False
+        assert "private" not in result.text
+    factory.assert_not_called()

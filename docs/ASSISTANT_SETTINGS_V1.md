@@ -2,9 +2,9 @@
 
 Original owners: Agent #34/#35, AI #17, Studio #56 and Intelligence #8. Architecture correction: [AI #18](https://github.com/flamoris-jp/flamoris-ai/issues/18) and [Agent #38](https://github.com/flamoris-jp/flamoris-ai-agent/issues/38).
 
-**This document describes the existing opt-in implementation, including its legacy MCP path. It is not a rollout instruction for the corrected architecture.** No code/configuration/DB change is made by this documentation PR. The replacement non-MCP transport and its configuration have not been implemented here.
+**This document describes the opt-in settings domain and its retained state/policy.** The implemented [internal HTTP and direct execution contract](INTERNAL_EXECUTION.md) replaces the old internal MCP hops. Source cleanup changes no DB schema, grants or existing persona/conversation records and performs no operational rollout.
 
-Agent owns persona identity/revisions, model/export grants and conversation snapshots. Studio authenticates its account and renders its authorized editor. Currently, the configured MCP-backed targets and provider credentials follow the existing Intelligence service path. The corrected target replaces that internal MCP dependency; it does not move persona or grants to another owner.
+Agent owns persona identity/revisions, model/export grants and conversation snapshots. Studio authenticates its account and renders its authorized editor. Operator-approved targets use the shared stateless non-MCP provider library; provider credentials remain operator configuration. Persona and grants stay with Agent.
 
 ## Existing contract and admission
 
@@ -38,16 +38,16 @@ Migration 004 is additive/repeatable and creates no grants or imported persona d
 
 Versions/fences are retained indefinitely, up to 256 revisions per Agent; capacity exhaustion requires an operator retention decision. Preserve current/recovery revisions and save fences during any separately authorized deletion. No automatic pruning. Principal options follow guarded retirement; conversation snapshots and request fences remain.
 
-Existing service concurrency and execution limits remain. Current MCP-backed remote requests use the configured Intelligence adapter input/output/time/concurrency and per-request cost bounds. A later non-MCP adapter must preserve equivalent applicable guarantees. Token/cost metadata is not a monthly billing guarantee; timeout/cancel does not prove unbilled remote cancellation. Never replay uncertain inference.
+Existing service concurrency and execution limits remain. Direct remote requests use the shared Intelligence adapter input/output/time/concurrency and operator-configured per-request cost bounds. Token/cost metadata is not a monthly billing guarantee; timeout/cancel does not prove unbilled remote cancellation. Never replay uncertain inference.
 
 ## Rollout hold and target migration
 
-Do not execute migration/import/grant or transport changes from this documentation review. In the current MCP-backed setup, `AGENT_INTELLIGENCE_TRANSPORT=mcp` is still an implemented mode used by the settings path. Its architectural deprecation does not make the current service work without it. Do not disable it or enable an unimplemented replacement based only on this document.
+Operational migration/import/grant or transport cutover requires its own authorization. `AGENT_INTELLIGENCE_TRANSPORT=mcp` and a nonempty old MCP endpoint are explicitly rejected. The approved direct route and the unchanged registry are documented in INTERNAL_EXECUTION.md. Existing sessions with the former execution digest invalidate instead of changing provider under their saved identity.
 
 The [pre-correction rollout reference](https://github.com/flamoris-jp/flamoris-ai-agent/blob/e949678efdee18219ceedbed650df097ed62a52f/docs/ASSISTANT_SETTINGS_V1.md) preserves exact historical commands and configuration. It is an as-built reference, not permission to deploy the rejected route anew.
 
-The later Intelligence task must specify the minimum non-MCP execution and Studio-to-Agent contracts, exact configuration migration, caller/error behavior and retained guarantees before deleting the old path. Keep model/persona identities, snapshots, consent, grants and fences; do not silently fallback. Review current grants at admission, and reauthorize persona saves under the head lock. Revocation cannot retroactively cancel an already-admitted committed save; principal-session revocation keeps its existing binding lock semantics.
+The implemented internal contracts retain model/persona identities, snapshots, consent, grants and fences; there is no silent fallback. Review current grants at admission, and reauthorize persona saves under the head lock. Revocation cannot retroactively cancel an already-admitted committed save; principal-session revocation keeps its existing binding lock semantics.
 
 ## Acceptance
 
-Retain tests for head-lock/atomic revision, read versus edit, complete-context export, immutable target/configuration mapping, continuation snapshots, exact transport catalogs, credential isolation and rollback/retention. Normal CI and live PostgreSQL/provider/two-user acceptance remain different evidence. No new feature, renamed setting or migrated deployment is claimed by this documentation correction.
+Retain tests for head-lock/atomic revision, read versus edit, complete-context export, immutable target/configuration mapping, continuation snapshots, exact HTTP/external MCP catalogs, credential isolation and rollback/retention. CI PostgreSQL fixtures and live provider/two-user deployment acceptance remain different evidence. No deployment migration is claimed by source cleanup.

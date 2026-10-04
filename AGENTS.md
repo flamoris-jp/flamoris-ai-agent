@@ -4,11 +4,11 @@ This repository owns optional persistent Agent identity/personality, conversatio
 
 ## Current authorization
 
-Review/fix documentation and merge it only with explicit user permission. This pass does not start Work implementation, source deletion, migrations, configuration changes, provider calls or deployment. Intelligence cleanup is the next priority; Controller implementation and Generation/reference-image work stay held.
+The user's subsequent explicit instruction authorizes source cleanup, internal connections, deterministic tests, review/fixes and merges under #18. No DB/data/grant/credential change, live provider call or deployment is included. Controller implementation and Generation/reference-image expansion stay held.
 
 ## Target versus as-built
 
-Agent uses a narrow transport-independent ExecutionClient/internal execution contract. Target adapters may call local Runtime, a provider API or vendor runtime without internal MCP. The existing MCP execution adapter/configuration still exists until a separately reviewed replacement/removal; document it truthfully, not as already migrated.
+Agent uses a narrow transport-independent ExecutionClient contract. The approved adapter reuses the shared non-MCP `flamoris_intelligence` library; Studio calls the internal JSON HTTP API. Read docs/INTERNAL_EXECUTION.md. The outbound MCP execution client is retired, while the separate external inbound MCP surface remains.
 
 Do not introduce unimplemented configuration names. Current `AGENT_INTELLIGENCE_TARGETS` is not renamed by documentation. Do not tell operators to disable a setting required by the current package or enable an unimplemented replacement. Keep old runbook facts under an explicit as-built/rollout-hold label.
 

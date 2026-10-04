@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
-from test_intelligence_mcp import TARGET
+from test_direct_execution import TARGET
 from test_scoped_service import Principals, shared_http
 
 from flamoris_ai_agent.delegation import authenticated_delegator
@@ -46,7 +46,7 @@ def test_registry_bounded_exact_identity_and_no_caller_urls(monkeypatch):
     monkeypatch.setenv("AGENT_INTELLIGENCE_TARGETS", json.dumps([option(), option("openai")]))
     assert set(registry()) == {"local", "api"}
     first = registry()["api"].digest
-    monkeypatch.setenv("AGENT_INTELLIGENCE_MCP_ENDPOINT", "http://127.0.0.1:9999/mcp")
+    monkeypatch.setenv("INTELLIGENCE_BASE_URL", "http://127.0.0.1:9999")
     assert registry()["api"].digest != first
 
 
@@ -66,7 +66,7 @@ def test_personality_bounds_and_unique_titles(sections):
 
 
 def test_console_cannot_use_remote_target_without_granted_session(monkeypatch):
-    monkeypatch.setenv("AGENT_INTELLIGENCE_TRANSPORT", "mcp")
+    monkeypatch.setenv("AGENT_INTELLIGENCE_TRANSPORT", "direct")
     monkeypatch.setenv("AGENT_INTELLIGENCE_TARGET", json.dumps(option("openai")["target"]))
     with pytest.raises(IntelligenceError, match="remote_export_forbidden"):
         configured_session()

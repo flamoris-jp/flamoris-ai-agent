@@ -9,6 +9,8 @@ from mcp.server.transport_security import TransportSecuritySettings
 from starlette.responses import JSONResponse, Response
 
 from flamoris_ai_agent.delegation import authenticated_delegator
+from flamoris_ai_agent.internal_api import routes
+from flamoris_ai_agent.mcp_service import AgentService
 from flamoris_ai_agent.server import create_server
 
 
@@ -97,6 +99,7 @@ def create_http_app(settings, service=None):
         from flamoris_ai_agent.scoped_service import ScopedAgentService
 
         service = ScopedAgentService()
+    service = service or AgentService()
     if service is not None and bool(getattr(service, "shared_principals", False)) != (
         settings.delegator_key is not None
     ):
@@ -114,6 +117,7 @@ def create_http_app(settings, service=None):
             allowed_origins=[],
         ),
     )
+    app.router.routes[0:0] = routes(service)
     app.add_middleware(ServiceAuth, settings=settings)
     return app
 

@@ -4,14 +4,14 @@ Authority: [AI #18](https://github.com/flamoris-jp/flamoris-ai/issues/18), [Agen
 
 ## As-built versus target
 
-Current persisted grants/sessions are described in [PRINCIPAL_SESSIONS.md](PRINCIPAL_SESSIONS.md), limited Image context/availability in [STUDIO_CONTEXT_V1.md](STUDIO_CONTEXT_V1.md), and current opt-in settings in [ASSISTANT_SETTINGS_V1.md](ASSISTANT_SETTINGS_V1.md). The [legacy internal MCP adapter](INTELLIGENCE_MCP.md) still needs code-level replacement. A historical single-principal snapshot is not the latest implementation inventory.
+Current persisted grants/sessions are described in [PRINCIPAL_SESSIONS.md](PRINCIPAL_SESSIONS.md), limited Image context/availability in [STUDIO_CONTEXT_V1.md](STUDIO_CONTEXT_V1.md), and opt-in settings in [ASSISTANT_SETTINGS_V1.md](ASSISTANT_SETTINGS_V1.md). The [implemented internal contract](INTERNAL_EXECUTION.md) replaces both old MCP hops with Agent HTTP and shared direct provider execution. A historical single-principal snapshot is not the latest implementation inventory.
 
 ```text
 Target: Studio Agent Support -> internal non-MCP Agent contract
           -> AI Agent -> ExecutionClient -> Runtime / API / vendor runtime
 ```
 
-Agent Support supplies personality/conversation. Raw inference and generation bypass Agent when no personality is requested. Both the inbound Studio-to-Agent path and outgoing Agent-to-Intelligence path must be audited; changing only one hop does not remove all internal MCP use. External ChatGPT/MCP Hub facades remain separate. No replacement endpoint or setting is claimed implemented here.
+Agent Support supplies personality/conversation. Raw inference and generation bypass Agent when no personality is requested. Studio uses `/api/v1`; Agent reuses the non-MCP `flamoris_intelligence` library. External ChatGPT/MCP Hub facades remain separate. Native Runtime embedding is a separate scope; there is no new universal execution service.
 
 ## Principal and session guarantees to retain
 
@@ -47,4 +47,4 @@ Initial advice is text under the existing contract. Future structured proposals,
 
 The Intelligence-first task must define exact source removals and a functioning non-MCP contract, preserving principal/continuation isolation, revocation, prompt trust, context bounds, full-context export refusal, identity matching, truthful availability, partial-output rejection, duplicate/unknown behavior and credential redaction. Test with fake providers first; PostgreSQL/provider/restart/two-user live checks are separate evidence.
 
-This documentation review/fix/merge pass starts no implementation, DB migration, Generation Controller, ComfyWorkFlow/reference-image expansion or live operations. Do not follow historical #15 sequencing in preference to #18.
+The renewed #18 instruction authorizes the internal source cleanup and connections. No DB migration, Generation Controller, ComfyWorkFlow/reference-image expansion or live operation is included. Historical #15 sequencing does not override #18.

@@ -1,6 +1,6 @@
 # Agent execution boundary (#10)
 
-`AgentSession` owns prompt/history, conversation persistence and lifecycle. `ExecutionClient` resolves model identity and executes bounded ordered messages. Preserve this transport-independent boundary when replacing the existing internal MCP adapter; future local Runtime/API/vendor adapters do not require MCP as their internal contract. They are target adapter classes, not claimed implemented by this document.
+`AgentSession` owns prompt/history, conversation persistence and lifecycle. `ExecutionClient` resolves model identity and executes bounded ordered messages. Approved targets use the shared non-MCP provider library, preserving original message roles. See [the implemented internal contract](INTERNAL_EXECUTION.md); future native Runtime adapters remain separately scoped.
 
 `ModelIdentity(provider, model)` is checked against the registered runtime row. `ExecutionRequest` contains ordered system/user/assistant messages; results must match the selected identity before assistant persistence. Previous conversation material stays untrusted JSON data, not trusted system instruction.
 
@@ -20,4 +20,4 @@ The console's single-user latest-conversation lookup must not become an unscoped
 
 The earlier #10/#11/#13 implementation authorization and #2 acceptance are historical records, not permission to restart work now. Current authority is [AI #18](https://github.com/flamoris-jp/flamoris-ai/issues/18) / [Agent #38](https://github.com/flamoris-jp/flamoris-ai-agent/issues/38).
 
-After documentation review, the separately authorized Intelligence task inventories and removes unnecessary internal MCP transport/discovery plumbing while preserving this boundary and a functioning retained path. Do not delete model/provenance or export checks just because they reside near MCP code. Do not mix persona DB changes, new Studio features, Generation work or native-kernel redesign with transport cleanup. Documentation merge alone performs no code deletion or live migration.
+The renewed user authorization removes outbound MCP transport/discovery/translation while retaining this working boundary, model/provenance checks, context/export policy and durable state. Internal HTTP uses the same domain service as external MCP. No persona DB redesign, new Generation capability, native-kernel change or live migration is part of the cleanup.

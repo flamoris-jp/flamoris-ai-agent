@@ -4,7 +4,9 @@ COPY pyproject.toml README.md LICENSE docker-requirements.txt ./
 COPY src/ ./src/
 COPY agents/ ./agents/
 RUN python -m pip install --no-cache-dir hatchling==1.32.4 \
-    && python -m pip wheel --no-cache-dir --wheel-dir /wheels -r docker-requirements.txt \
+    && python -m pip wheel --no-cache-dir --wheel-dir /wheels \
+       'flamoris-intelligence-mcp @ https://github.com/flamoris-jp/flamoris-intelligence-mcp/archive/5da9736e60c29ed549d16656ff7acac5d54bdb83.zip' \
+    && python -m pip wheel --no-cache-dir --find-links=/wheels --wheel-dir /wheels -r docker-requirements.txt \
     && python -m pip wheel --no-cache-dir --no-deps --no-build-isolation --wheel-dir /wheels .
 
 FROM python:3.12-slim-bookworm
@@ -15,7 +17,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY --from=build /wheels /wheels
 COPY docker-requirements.txt /tmp/docker-requirements.txt
 RUN python -m pip install --no-cache-dir --no-index --find-links=/wheels \
-      -r /tmp/docker-requirements.txt /wheels/flamoris_ai_agent-*.whl \
+      -r /tmp/docker-requirements.txt \
+    && python -m pip install --no-cache-dir --no-index --no-deps --find-links=/wheels \
+       /wheels/flamoris_ai_agent-*.whl \
     && rm -r /wheels /tmp/docker-requirements.txt \
     && mkdir /app && chown 10001:10001 /app
 USER 10001:10001
