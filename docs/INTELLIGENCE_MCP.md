@@ -1,63 +1,28 @@
 # Legacy internal Intelligence MCP adapter
 
-Status: **deprecated target architecture**. This document records the current/previous migration implementation only.
+The internal Agent -> Intelligence MCP architecture is superseded by [AI #18](https://github.com/flamoris-jp/flamoris-ai/issues/18) and [Agent #38](https://github.com/flamoris-jp/flamoris-ai-agent/issues/38). The current adapter remains an as-built migration input until actual replacement/removal; this document does not change its configuration.
 
-FLAMORIS AI [#18](https://github.com/flamoris-jp/flamoris-ai/issues/18) and Agent [#38](https://github.com/flamoris-jp/flamoris-ai-agent/issues/38) supersede the design that made Intelligence MCP the Agent's internal execution dependency.
-
-## Correct target
+## Corrected target
 
 ```text
-AI Agent
-   ↓
-non-MCP ExecutionClient / internal execution interface
-   ├─ local FLAMORIS AI Runtime
-   ├─ direct provider API such as OpenAI Responses
-   └─ vendor runtime
+AI Agent -> non-MCP ExecutionClient / internal execution interface
+              -> local Runtime / provider API / vendor runtime
 ```
 
-Intelligence MCP remains an external MCP facade used through the ChatGPT/MCP Hub path. Agent must not call it internally merely to reuse provider adapters.
+The external Intelligence MCP facade is separate. Agent must not return through an external MCP entrance merely to reuse an adapter. Preserve a small internal interface instead of inventing a universal gateway or duplicating providers across callers.
 
-## Current implementation baseline
+## Current implementation reference
 
-Current main may still contain:
+The existing implementation includes `AGENT_INTELLIGENCE_TRANSPORT=mcp`, MCP endpoint/target configuration, discovery/dispatch and result mapping. The current settings registry is `AGENT_INTELLIGENCE_TARGETS`, not a newly invented configuration name. The complete [pre-correction adapter contract](https://github.com/flamoris-jp/flamoris-ai-agent/blob/e949678efdee18219ceedbed650df097ed62a52f/docs/INTELLIGENCE_MCP.md) is pinned for operational and regression analysis, not active migration direction.
 
-- `AGENT_INTELLIGENCE_TRANSPORT=mcp`;
-- MCP endpoint/target configuration;
-- model/capability discovery against Intelligence MCP;
-- the MCP request/result adapter;
-- locality/data-flow checks written around that transport.
+## Deletion-first preparation
 
-These are migration inputs for removal, not the desired future architecture.
+Inventory exact source/tests, current callers and configuration. Identify transport mode/endpoint handling, MCP discovery/dispatch and translation needed only for the obsolete hop. Specify a functioning non-MCP execution contract and explicit unsupported-call behavior before removing a currently used path.
 
-## What must be preserved during cleanup
+Keep `ExecutionClient` request/result semantics, model identity checks still required by the target, personality/conversation state, principal isolation, complete-context export consent, immutable snapshots, bounded context/output/time, redacted errors, provenance and durable request fences. A former MCP-specific code location does not make every safety check in it disposable.
 
-Removing the internal MCP path must not remove the Agent's real safety/state guarantees:
+Do not silently select direct mode when MCP fails, replay uncertain work or remove persistent records. Do not redesign persona DB, native Runtime, Generation or add provider/Agent features in this cleanup. Studio inbound MCP use is a separate internal hop to audit; inbound external Agent MCP compatibility is not the same as the outgoing dependency.
 
-- personality and immutable conversation snapshots;
-- principal/session authorization and isolation;
-- complete-context remote export consent;
-- model/provider provenance;
-- input/output/context/time bounds;
-- no hidden fallback or retry after ambiguous acceptance;
-- durable request/duplicate fences;
-- fixed safe errors and secret redaction;
-- continuation identity and model consistency.
+## Current authorization
 
-## What the next implementation pass should remove first
-
-1. MCP-specific internal transport selection and endpoint configuration.
-2. Intelligence MCP discovery/dispatch from the Agent execution path.
-3. MCP-only public-model/provider translation that exists solely because of that hop.
-4. Documentation/tests that require `Agent -> Intelligence MCP` as the target dependency direction.
-
-Keep or reuse the narrow transport-independent `ExecutionClient` request/result boundary. Re-introduce provider adapters only behind that internal boundary, with the smallest implementation needed for the actual local Runtime/API targets.
-
-Do not redesign personality, DB state, Studio UI, AI Runtime kernel, or generation in the same cleanup.
-
-## Compatibility
-
-Existing deployments may still use the MCP adapter until a separately authorized implementation and rollout replaces it. Documentation changes do not alter live configuration. Do not silently fall back between old and new paths.
-
-## Historical note
-
-The previous detailed MCP adapter specification is preserved in Git history and linked Issues/PRs. It should not be copied into new design documents as active architecture.
+Documentation review/fix/merge only, when explicitly requested. Work implementation and live migration need separate authorization. Existing deployments may still use the legacy adapter. Deprecated architecture is not evidence that the replacement exists or that current operators can remove its configuration.
