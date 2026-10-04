@@ -2,8 +2,7 @@
 
 The console and future MCP surface use one `AgentSession`. It owns prompt/history,
 conversation persistence and lifecycle; an `ExecutionClient` only resolves model
-identity and executes bounded messages. The temporary llama.cpp adapter implements
-this interface. No runtime activation, provider fallback or implicit retries.
+identity and executes bounded messages. The temporary llama.cpp adapter implements this interface. This **transport-independent `ExecutionClient` is the canonical internal boundary**. Future local Runtime, direct API, or vendor-runtime adapters plug in here without routing through MCP. No runtime activation, provider fallback or implicit retries.
 
 `ModelIdentity(provider, model)` is validated against the existing runtime row.
 Each `ExecutionRequest` carries ordered system/user/assistant messages; the result
@@ -37,3 +36,8 @@ duplicate handling belong to #11. No schema or imported historical record change
 
 User authorization on 2026-09-26 permits offline #10 → #11 → #13 implementation
 before live acceptance. #2 remains the real GPT-OSS/PostgreSQL/restart gate.
+
+
+## Architecture correction and next cleanup
+
+FLAMORIS AI #18 preserves this narrow `ExecutionClient` abstraction while rejecting `Agent -> Intelligence MCP` as the canonical internal route. The next implementation pass should delete MCP-specific internal transport/discovery/target plumbing first and keep this request/result boundary stable. Do not combine that cleanup with personality DB changes, Studio feature work, Generation work, or AI Runtime kernel redesign.
