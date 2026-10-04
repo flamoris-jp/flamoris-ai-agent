@@ -14,7 +14,7 @@ See [assistant settings and model integration](docs/ASSISTANT_SETTINGS_V1.md) fo
 
 ## Proposed integration design
 
-[Studio assistant integration](docs/STUDIO_ASSISTANT.md) records the proposed media/ExecutionPlan/Agent integration coordinated by [FLAMORIS AI #15](https://github.com/flamoris-jp/flamoris-ai/issues/15). It is a design proposal, not a claim that new providers, composed execution or shared-user Agent assistance are implemented. Existing public contracts and readiness gates remain authoritative.
+[Studio assistant integration](docs/STUDIO_ASSISTANT.md) records the proposed media/ExecuteFlow/Agent integration coordinated by [FLAMORIS AI #15](https://github.com/flamoris-jp/flamoris-ai/issues/15). It is a design proposal, not a claim that new providers, composed execution or shared-user Agent assistance are implemented. Existing public contracts and readiness gates remain authoritative.
 
 ## Imported baseline
 
