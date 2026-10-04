@@ -14,7 +14,7 @@ See [assistant settings and model integration](docs/ASSISTANT_SETTINGS_V1.md) fo
 
 ## Proposed integration design
 
-[Studio assistant integration](docs/STUDIO_ASSISTANT.md) records the proposed media/Workflow/Agent integration coordinated by [FLAMORIS AI #15](https://github.com/flamoris-jp/flamoris-ai/issues/15). It is a design proposal, not a claim that new providers, composed execution or shared-user Agent assistance are implemented. Existing public contracts and readiness gates remain authoritative.
+[Studio assistant integration](docs/STUDIO_ASSISTANT.md) records the proposed media/ExecutionPlan/Agent integration coordinated by [FLAMORIS AI #15](https://github.com/flamoris-jp/flamoris-ai/issues/15). It is a design proposal, not a claim that new providers, composed execution or shared-user Agent assistance are implemented. Existing public contracts and readiness gates remain authoritative.
 
 ## Imported baseline
 
@@ -142,11 +142,11 @@ These are boundaries, not mandatory layers.
 
 [flamoris-intelligence-mcp](https://github.com/flamoris-jp/flamoris-intelligence-mcp) is the implemented MCP-native, provider-neutral gateway for bounded language, reasoning, coding, and related intelligence capabilities. Its Phase 1 runtime is mock/CI validated; live deployment acceptance remains a separate check.
 
-The Agent does not use Intelligence MCP as its canonical internal execution dependency. Intelligence MCP is an external ChatGPT-facing facade. Agent uses its own bounded non-MCP execution interface and still must not absorb unrelated host/runtime authority. If Intelligence MCP performs bounded task coordination or multi-agent execution inside an intelligence request, the Agent still remains the authority for persistent Agent identity, conversation, memory, and long-lived workflow context.
+The Agent does not use Intelligence MCP as its canonical internal execution dependency. Intelligence MCP is an external ChatGPT-facing facade. Agent uses its own bounded non-MCP execution interface and still must not absorb unrelated host/runtime authority. If Intelligence MCP performs bounded task coordination or multi-agent execution inside an intelligence request, the Agent still remains the authority for persistent Agent identity, conversation, memory, and long-lived Agent orchestration context.
 
 ### FLAMORIS Generation MCP
 
-[flamoris-generation-mcp](https://github.com/flamoris-jp/flamoris-generation-mcp) owns generative-media and closely related media-analysis workflows, jobs, and assets.
+[flamoris-generation-mcp](https://github.com/flamoris-jp/flamoris-generation-mcp) owns generative-media definitions/ComfyWorkFlows, jobs, and assets.
 
 The Agent may later request generation through the reviewed internal generation boundary when personality-driven generation is desired, but generation is not a mandatory Agent path and Agent must not become a second owner of generation job state.
 
@@ -228,7 +228,7 @@ FLAMORIS AI Agentは、FLAMORISで長く動き続けるAI Agentのためのリ�
 
 - **会話・Memory・Prompt・Agent policy** はAI Agentがauthorityを持つ。
 - **LLM / reasoning / coding intelligence** は `flamoris-intelligence-mcp` 側の責務。
-- **画像・動画・音楽・音声の生成job / workflow / asset** は `flamoris-generation-mcp` 側の責務。
+- **画像・動画・音楽・音声の生成job / ComfyWorkFlow / asset** は `flamoris-generation-mcp` 側の責務。
 - **2D / Cutwork / Kachinco / Studioなどの制作データ** は各アプリ自身がauthorityを持つ。
 - AI Agentは便利だからといって、全部の状態を抱え込まない。記憶力が良すぎる物置にはしない。🐈
 
