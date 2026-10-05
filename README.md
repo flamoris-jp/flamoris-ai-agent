@@ -21,12 +21,12 @@ The [internal HTTP and direct execution contract](docs/INTERNAL_EXECUTION.md) is
 
 An inbound external Agent MCP adapter and an outbound Agent-to-Intelligence MCP client are different things. Removing the latter does not authorize deleting every external MCP tool. Studio's internal inbound MCP use also needs its own caller/contract audit.
 
-The user authorized source cleanup and internal connections. This changes no DB schema, grants or saved conversations and performs no deployment or paid inference. Generation Controller remains unimplemented; Generation/ComfyWorkFlow/reference-image expansion stays paused.
+The earlier internal-connection cleanup changed no DB schema. Subsequently, Agent #43 and Studio #66 implemented same-conversation model switching with additive source migrations (Agent 005 and Studio 20261005_12). Controller and its bounded ComfyWorkFlow/reference-image profile are also accepted in main. No live migration, grant mutation, deployment or paid inference has been performed; see [AI progress](https://github.com/flamoris-jp/flamoris-ai/blob/main/PROGRESS.md).
 
 ## Existing contracts
 
-- [Same-conversation model switching](docs/MODEL_CONTINUATION.md) is proposed in
-  Agent #42 with source migration 005; deployment acceptance remains pending.
+- [Same-conversation model switching](docs/MODEL_CONTINUATION.md) is implemented in
+  Agent #43, matched with Studio #66 and source migration 005; deployment acceptance remains pending.
 
 - [Installation](docs/INSTALL.md) and [Agent context](docs/AGENT_CONTEXT.md)
 - [ExecutionClient](docs/EXECUTION_CONTRACT.md)
@@ -72,7 +72,7 @@ Opt-in shared HTTP principal/session and settings catalogs are separate contract
 
 ## Ownership and terminology
 
-AI Runtime owns model-adjacent inference, ExecuteFlow, the distinct compiled ExecutionPlan, active Jobs/Continuations and resources. ComfyWorkFlow means ComfyUI graph/JSON, not an Agent flow or all media requests. Generation-domain jobs/inputs/assets remain outside Agent; Generation MCP is the external facade and future Controller work is deferred. GPU Node Manager retains host lifecycle authority.
+AI Runtime owns model-adjacent inference, ExecuteFlow, the distinct compiled ExecutionPlan, active Jobs/Continuations and resources. ComfyWorkFlow means ComfyUI graph/JSON, not an Agent flow or all media requests. Generation-domain jobs/inputs/assets remain outside Agent; Generation MCP is the external facade and the implemented Controller owns the shared generation domain. GPU Node Manager retains host lifecycle authority.
 
 Products own their document, editing, revision and permission state. Agent may assist through explicit granted contracts, not shadow copies or ambient tool authority. Commons owns generic infrastructure. Personality and model selection remain independent; provider configuration and secrets never become persona or memory.
 
@@ -82,7 +82,7 @@ Knowledge, drafts, prior messages and model output are untrusted data, not permi
 
 AI Agentは人格が必要なときだけ使う層です。人格・会話・記憶・principal/sessionを維持し、Studioは内部HTTP、推論は共有の非MCPアダプターで接続します。外向けMCP入口は維持し、内部Intelligence MCPクライアントは削除しました。実機の切替は行っていません。
 
-ExecuteFlowと既存ExecutionPlanはRuntime側、ComfyWorkFlowはComfyUI側です。Controller実装や実機変更は今回の範囲に含めません。
+ExecuteFlowと既存ExecutionPlanはRuntime側、ComfyWorkFlowはComfyUI側です。Controllerと会話内LLM切替は担当mainへマージ済みです。実機反映・migration適用は未実施です。
 
 ## Policy and license
 

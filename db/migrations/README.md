@@ -1,25 +1,22 @@
-# migrations
+# Agent schema migrations
 
-FLAMORIS AI DBの将来migration置き場。
+Apply additive SQL migrations in order after the initial `db/01_schema.sql`,
+through the established schema-owner backup/migration procedure. Do not rewrite
+the initial schema to upgrade a running database. Source acceptance does not mean
+these migrations have been applied to a live database; no automatic migration or
+grant provisioning is enabled.
 
-予定例:
+| Order | Migration | Contract |
+| --- | --- | --- |
+| 002 | [002_principal_sessions.sql](002_principal_sessions.sql) | Operator-controlled delegation and immutable bounded principal sessions; [principal contract](../../docs/PRINCIPAL_SESSIONS.md) |
+| 003 | [003_principal_retention.sql](003_principal_retention.sql) | Guarded owner-only retirement of expired bindings; preserves transcripts and request fences; [retention](../../docs/PRINCIPAL_RETENTION.md) |
+| 004 | [004_assistant_settings.sql](004_assistant_settings.sql) | Model/settings grants and versioned personality state; [settings contract](../../docs/ASSISTANT_SETTINGS_V1.md) |
+| 005 | [005_model_continuations.sql](005_model_continuations.sql) | Immutable same-principal model handoff lineage, source revocation and leaf-first retention; [continuation contract](../../docs/MODEL_CONTINUATION.md) |
 
-```text
-002_pgvector.sql
-003_memory_retrieval.sql
-004_relay_worker.sql
-```
+Shared settings and continuation are opt-in. Review exact membership/delegation,
+model and personality grants independently; a transport credential or migration
+does not authorize a human. Match Studio's migration chain through
+`20261005_12` for model switching and preserve backups/rollback fences.
 
-`002_principal_sessions.sql` adds explicit operator-controlled delegation grants
-and immutable bounded principal sessions for #18. Apply through the established
-schema-owner operations path before future shared-mode activation. It creates no
-authorization grants automatically. See `docs/PRINCIPAL_SESSIONS.md`.
-
-`003_principal_retention.sql` follows 002 and supplies guarded, bounded owner-only
-retirement of expired authorization bindings. It preserves all conversation state
-and request fences; no automatic cleanup is enabled. See `docs/PRINCIPAL_RETENTION.md`.
-
-v0.1ではpgvectorをまだ有効化しない。
-
-Schema変更時は既存の `01_schema.sql` を直接書き換えて運用するのではなく、
-DB稼働開始後はmigration SQLを追加して履歴を残す。
+The earlier pgvector/memory/relay filenames were planning examples, not shipped
+migrations. pgvector remains outside the v0.1 schema contract.

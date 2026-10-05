@@ -87,7 +87,9 @@ another Agent. Existing calls without an explicit key retain their old behavior.
 
 The durable request fence remains scoped to Human/Agent/Project across session
 changes, so a fresh session cannot replay an existing admitted request UUID.
-Scoped parents additionally require the same principal session. Fixed-principal
+Scoped parents require the same principal session or explicitly recorded,
+authorized same-principal lineage from [model continuation](MODEL_CONTINUATION.md)
+with migration 005. An unrelated fresh session cannot inherit history. Fixed-principal
 parents must have no scoped-session field; the old endpoint cannot read a new
 shared-session conversation as legacy history. No latest-parent lookup is added.
 

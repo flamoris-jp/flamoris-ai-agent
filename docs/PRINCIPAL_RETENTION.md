@@ -14,7 +14,9 @@ system context, runtime provenance and admitted request UUID fences remain in
 their existing tables. Retirement never modifies or deletes those rows.
 
 A new session still checks current exact grants and membership. A retired scoped
-parent cannot be continued under a fresh session. Duplicate request fencing stays
+parent cannot be continued under an unrelated fresh session. Explicit
+[model continuation](MODEL_CONTINUATION.md) records authorized immutable lineage
+before revoking the source; it does not resurrect a retired authorization binding. Duplicate request fencing stays
 Human/Agent/Project scoped across session changes. An insert trigger refuses any
 new binding UUID already referenced in historical conversation metadata; a
 historical binding cannot be re-established with changed authorization.
@@ -52,6 +54,16 @@ Only the schema owner can execute `chat.retire_principal_sessions(integer)`.
 PUBLIC and `flamoris_ai_app` execution are revoked; the runtime also lacks DELETE.
 Invoker functions do not acquire a privileged role. The schema owner remains a
 trusted database operator; do not grant that identity to the running service.
+
+## Model-continuation lineage
+
+Migration `005_model_continuations.sql`, after 002–004, extends the guarded
+retirement functions for immutable handoff lineage. Retirement is leaf-first:
+an ancestor remains protected while a retained child references it. Existing
+expiry, grace, lifecycle, locking and capacity checks still apply; no automatic
+cleanup or historical UUID reuse is enabled. The 003 evidence below describes
+the original guard baseline; continuation-specific checks are documented in
+[MODEL_CONTINUATION.md](MODEL_CONTINUATION.md).
 
 ## Operator procedure
 
