@@ -1,6 +1,5 @@
 """Immutable handoffs and real scoped historical context, without provider calls."""
 
-from unittest.mock import patch
 from uuid import uuid4
 
 import psycopg
@@ -20,31 +19,65 @@ __all__ = ["authorization", "database", "settings_db"]
 
 def selected(principals, keys, model="local", consent=False):
     settings = ModelSettings(principals)
-    return principals.open("backend", keys, configure=lambda c, b: settings.bind_on(c, b, model, consent))
+    return principals.open(
+        "backend", keys, configure=lambda c, b: settings.bind_on(c, b, model, consent)
+    )
 
 
 def handoff(principals, source, request, model="api", consent=True):
     settings = ModelSettings(principals)
-    return principals.open("backend", source.keys, continue_from=source.session_id,
-                           request_id=request, configure=lambda c, b: settings.bind_on(c, b, model, consent))
+    return principals.open(
+        "backend",
+        source.keys,
+        continue_from=source.session_id,
+        request_id=request,
+        configure=lambda c, b: settings.bind_on(c, b, model, consent),
+    )
 
 
 def seed(dsn, bound, *, complete=True):
     parent = uuid4()
-    context = {"agent_sections": [{"title": "Identity", "content": "original persona"}],
-               "personality_revision": 1,
-               "previous_conversation": {"messages": [{"role": "user", "sender": "first", "content": "earlier turn"}]},
-               "studio_context": {"draft": {"positive_prompt": "earlier attachment"}}}
+    context = {
+        "agent_sections": [{"title": "Identity", "content": "original persona"}],
+        "personality_revision": 1,
+        "previous_conversation": {
+            "messages": [{"role": "user", "sender": "first", "content": "earlier turn"}]
+        },
+        "studio_context": {"draft": {"positive_prompt": "earlier attachment"}},
+    }
     with psycopg.connect(dsn, autocommit=True) as conn:
         from flamoris_ai_agent.mcp_store import scope_id
-        conn.execute("INSERT INTO chat.conversations(id,project_id,primary_agent_id,status,ended_at,system_context,metadata) "
-                     "VALUES (%s,%s,%s,'closed',now(),%s,%s)",
-                     (parent, bound.project_id, bound.agent_id, Jsonb(context), Jsonb({
-                         "client": "agent-mcp", "scope": scope_id(bound.ids),
-                         "principal_session": str(bound.session_id), "model_selection": {"id": "local"}})))
-        conn.execute("INSERT INTO chat.participants(conversation_id,human_id,display_name) VALUES (%s,%s,'first')", (parent,bound.human_id))
-        for role, content in [("user", "last question"), *(([("assistant", "last answer")] if complete else []))]:
-            conn.execute("INSERT INTO chat.messages(conversation_id,role,content) VALUES (%s,%s,%s)", (parent,role,content))
+
+        conn.execute(
+            "INSERT INTO chat.conversations(id,project_id,primary_agent_id,status,ended_at,system_context,metadata) "
+            "VALUES (%s,%s,%s,'closed',now(),%s,%s)",
+            (
+                parent,
+                bound.project_id,
+                bound.agent_id,
+                Jsonb(context),
+                Jsonb(
+                    {
+                        "client": "agent-mcp",
+                        "scope": scope_id(bound.ids),
+                        "principal_session": str(bound.session_id),
+                        "model_selection": {"id": "local"},
+                    }
+                ),
+            ),
+        )
+        conn.execute(
+            "INSERT INTO chat.participants(conversation_id,human_id,display_name) VALUES (%s,%s,'first')",
+            (parent, bound.human_id),
+        )
+        for role, content in [
+            ("user", "last question"),
+            *([("assistant", "last answer")] if complete else []),
+        ]:
+            conn.execute(
+                "INSERT INTO chat.messages(conversation_id,role,content) VALUES (%s,%s,%s)",
+                (parent, role, content),
+            )
     return parent
 
 
@@ -66,15 +99,24 @@ def test_handoff_preserves_identity_history_persona_and_duplicate_ack(settings_d
         assert [m["content"] for m in previous["messages"]][-2:] == ["last question", "last answer"]
         assert previous["messages"][0]["content"] == "earlier turn"
         assert "earlier attachment" in previous["messages"][1]["content"]
-        assert store.restore_context(lambda: pytest.fail("persona must be restored"))[0]["content"] == "original persona"
+        assert (
+            store.restore_context(lambda: pytest.fail("persona must be restored"))[0]["content"]
+            == "original persona"
+        )
     finally:
         store.close()
     for isolated in (other, selected(principals, source.keys)):
         with pytest.raises(IntelligenceError, match="conversation_unavailable"):
             scoped_store_open(principals, isolated, parent)
     with psycopg.connect(dsn) as conn:
-        assert conn.execute("SELECT metadata->'model_selection'->>'id' FROM chat.conversations WHERE id=%s", (parent,)).fetchone() == ("local",)
-        assert conn.execute("SELECT public_model_id FROM chat.principal_options WHERE session_id=%s", (source.session_id,)).fetchone() == ("local",)
+        assert conn.execute(
+            "SELECT metadata->'model_selection'->>'id' FROM chat.conversations WHERE id=%s",
+            (parent,),
+        ).fetchone() == ("local",)
+        assert conn.execute(
+            "SELECT public_model_id FROM chat.principal_options WHERE session_id=%s",
+            (source.session_id,),
+        ).fetchone() == ("local",)
 
 
 def test_incomplete_source_and_missing_consent_leave_old_authority(settings_db):
@@ -88,15 +130,24 @@ def test_incomplete_source_and_missing_consent_leave_old_authority(settings_db):
     assert principals.require("backend", source.session_id) == source
     with psycopg.connect(dsn) as conn:
         assert conn.execute("SELECT count(*) FROM chat.principal_continuations").fetchone() == (0,)
-        assert conn.execute("SELECT count(*) FROM chat.messages WHERE conversation_id=%s", (parent,)).fetchone() == (1,)
+        assert conn.execute(
+            "SELECT count(*) FROM chat.messages WHERE conversation_id=%s", (parent,)
+        ).fetchone() == (1,)
 
 
-async def test_http_domain_retry_rejects_changed_target_and_revoked_grants(settings_db, monkeypatch):
+async def test_http_domain_retry_rejects_changed_target_and_revoked_grants(
+    settings_db, monkeypatch
+):
     principals, dsn, _, bound, _ = settings_db
     monkeypatch.setenv("AGENT_SETTINGS_ENABLED", "1")
     source = selected(principals, bound.keys)
     service = ScopedAgentService(principals)
-    raw = {"session_id": str(source.session_id), "request_id": str(uuid4()), "model_id": "api", "remote_consent": True}
+    raw = {
+        "session_id": str(source.session_id),
+        "request_id": str(uuid4()),
+        "model_id": "api",
+        "remote_consent": True,
+    }
     token = authenticated_delegator.set("backend")
     try:
         answer = await service.continue_session(raw)

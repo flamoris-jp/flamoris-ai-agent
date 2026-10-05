@@ -123,18 +123,27 @@ class ScopedAgentService(AgentService):
                 # read the same selection. Old sessions are never retargeted.
                 from uuid import NAMESPACE_URL, uuid5
 
-                identity = uuid5(NAMESPACE_URL, f"flamoris-handoff:{caller}:{request.session_id}:{request.request_id}")
+                identity = uuid5(
+                    NAMESPACE_URL,
+                    f"flamoris-handoff:{caller}:{request.session_id}:{request.request_id}",
+                )
                 with self.principals.connection_factory() as conn:
-                    exists = conn.execute("SELECT id FROM chat.principal_sessions WHERE id=%s", (identity,)).fetchone()
+                    exists = conn.execute(
+                        "SELECT id FROM chat.principal_sessions WHERE id=%s", (identity,)
+                    ).fetchone()
                 if exists:
                     bound = self.principals.require(caller, identity)
                 else:
                     source = self.principals.require(caller, request.session_id)
                     self.models.require(source)
                     bound = self.principals.open(
-                        caller, source.keys, continue_from=source.session_id, request_id=request.request_id,
+                        caller,
+                        source.keys,
+                        continue_from=source.session_id,
+                        request_id=request.request_id,
                         configure=lambda conn, binding: self.models.bind_on(
-                            conn, binding, request.model_id, request.remote_consent),
+                            conn, binding, request.model_id, request.remote_consent
+                        ),
                     )
                 if self.models.require(bound) != option:
                     raise IntelligenceError("session_continuation_changed")
@@ -147,8 +156,12 @@ class ScopedAgentService(AgentService):
                 with anyio.CancelScope(shield=True):
                     await self.continuation_task
                 raise
-            return {"ok": True, "session_id": str(bound.session_id),
-                    "expires_at": bound.expires_at.isoformat(), "principal_revision": 1}
+            return {
+                "ok": True,
+                "session_id": str(bound.session_id),
+                "expires_at": bound.expires_at.isoformat(),
+                "principal_revision": 1,
+            }
         except IntelligenceError as exc:
             return {"ok": False, "error": {"code": exc.code}}
         except (ValidationError, ValueError, TypeError):

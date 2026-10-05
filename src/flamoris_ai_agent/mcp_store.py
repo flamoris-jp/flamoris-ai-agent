@@ -84,9 +84,13 @@ class MCPStore(PostgresStore):
         if not conversation:
             raise IntelligenceError("conversation_unavailable")
         historical_session = conversation[4].get("principal_session")
-        same_session = historical_session == (str(self.binding.session_id) if self.binding else None)
-        if not same_session and (self.binding is None or not self.principals.continues_on(
-                self.conn, self.binding, historical_session)):
+        same_session = historical_session == (
+            str(self.binding.session_id) if self.binding else None
+        )
+        if not same_session and (
+            self.binding is None
+            or not self.principals.continues_on(self.conn, self.binding, historical_session)
+        ):
             raise IntelligenceError("conversation_unavailable")
         self.previous_snapshot = conversation[3]
         selection = conversation[4].get("model_selection")
@@ -94,7 +98,11 @@ class MCPStore(PostgresStore):
         if same_session and selection != expected:
             raise IntelligenceError("model_selection_changed")
         # A remote conversation can only continue a previously admitted remote snapshot.
-        if same_session and self.model_option and self.model_option.target.data_flow == "remote_authorized":
+        if (
+            same_session
+            and self.model_option
+            and self.model_option.target.data_flow == "remote_authorized"
+        ):
             if not selection or selection.get("data_flow") != "remote_authorized":
                 raise IntelligenceError("remote_export_forbidden")
         rows = self.conn.execute(
@@ -117,12 +125,26 @@ class MCPStore(PostgresStore):
         if not isinstance(prior_messages, list) or len(prior_messages) > 12:
             raise IntelligenceError("invalid_agent_context")
         attachment = conversation[3].get("studio_context")
-        attached = ([{"role": "user", "sender": "Studio attachment", "created_at": conversation[1],
-                      "content": json.dumps(attachment, ensure_ascii=False, default=str)}] if attachment else [])
+        attached = (
+            [
+                {
+                    "role": "user",
+                    "sender": "Studio attachment",
+                    "created_at": conversation[1],
+                    "content": json.dumps(attachment, ensure_ascii=False, default=str),
+                }
+            ]
+            if attachment
+            else []
+        )
         messages = [*prior_messages, *attached, *messages][-12:]
-        if any(not isinstance(m, dict) or m.get("role") not in {"user", "assistant"}
-               or not isinstance(m.get("sender"), str) or not isinstance(m.get("content"), str)
-               for m in messages):
+        if any(
+            not isinstance(m, dict)
+            or m.get("role") not in {"user", "assistant", "system", "tool", "event"}
+            or not isinstance(m.get("sender"), str)
+            or not isinstance(m.get("content"), str)
+            for m in messages
+        ):
             raise IntelligenceError("invalid_agent_context")
         if any(len(m["sender"]) > 512 or len(m["content"].encode()) > 65536 for m in messages):
             raise IntelligenceError("input_too_large")

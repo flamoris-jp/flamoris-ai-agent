@@ -14,7 +14,13 @@ def operations(service):
         names.extend(["sessions.open", "ask_scoped", "ask_availability"])
         if getattr(service, "settings_enabled", False):
             names.extend(
-                ["sessions.continue", "models.allowed", "personality.get", "personality.history", "personality.save"]
+                [
+                    "sessions.continue",
+                    "models.allowed",
+                    "personality.get",
+                    "personality.history",
+                    "personality.save",
+                ]
             )
     else:
         names.append("ask")

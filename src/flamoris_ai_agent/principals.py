@@ -59,7 +59,9 @@ class PrincipalSessions:
     def __init__(self, connection_factory=None):
         self.connection_factory = connection_factory or db.get_connection
 
-    def open(self, delegator, keys: PrincipalKeys, *, configure=None, continue_from=None, request_id=None):
+    def open(
+        self, delegator, keys: PrincipalKeys, *, configure=None, continue_from=None, request_id=None
+    ):
         key(delegator)
         if not isinstance(keys, PrincipalKeys):
             raise IntelligenceError("principal_unavailable")
@@ -72,7 +74,9 @@ class PrincipalSessions:
                     parent_id, request_uuid = UUID(str(continue_from)), UUID(str(request_id))
                 except (ValueError, TypeError, AttributeError):
                     raise IntelligenceError("invalid_input") from None
-                continuation_id = uuid5(NAMESPACE_URL, f"flamoris-handoff:{delegator}:{parent_id}:{request_uuid}")
+                continuation_id = uuid5(
+                    NAMESPACE_URL, f"flamoris-handoff:{delegator}:{parent_id}:{request_uuid}"
+                )
                 existing = conn.execute(
                     "SELECT session_id FROM chat.principal_continuations WHERE parent_session_id=%s",
                     (parent_id,),
@@ -86,7 +90,9 @@ class PrincipalSessions:
                     return current
                 # Exclusive admission lock: asks acquire FOR SHARE in store.start.
                 # A pre-start ask cannot commit after this source is revoked.
-                conn.execute("SELECT id FROM chat.principal_sessions WHERE id=%s FOR UPDATE", (parent_id,))
+                conn.execute(
+                    "SELECT id FROM chat.principal_sessions WHERE id=%s FOR UPDATE", (parent_id,)
+                )
                 parent = self.require_on(conn, delegator, parent_id)
                 if parent.keys != keys:
                     raise IntelligenceError("principal_unavailable")
@@ -103,7 +109,8 @@ class PrincipalSessions:
                     "FROM chat.principal_continuations WHERE session_id=%s UNION ALL "
                     "SELECT p.session_id,p.parent_session_id,c.depth+1 FROM chat.principal_continuations p "
                     "JOIN chain c ON p.session_id=c.parent_session_id WHERE c.depth<32) "
-                    "SELECT COALESCE(max(depth),0) FROM chain", (parent_id,),
+                    "SELECT COALESCE(max(depth),0) FROM chain",
+                    (parent_id,),
                 ).fetchone()[0]
                 if depth >= 31:
                     raise IntelligenceError("principal_capacity")
@@ -148,7 +155,8 @@ class PrincipalSessions:
             if continue_from is not None:
                 conn.execute(
                     "INSERT INTO chat.principal_continuations(session_id,parent_session_id,request_id) "
-                    "VALUES (%s,%s,%s)", (session_id, parent_id, request_uuid),
+                    "VALUES (%s,%s,%s)",
+                    (session_id, parent_id, request_uuid),
                 )
                 conn.execute(
                     "UPDATE chat.principal_sessions SET revoked_at=clock_timestamp() WHERE id=%s",
@@ -170,8 +178,14 @@ class PrincipalSessions:
             "ON p.session_id=c.id JOIN chat.principal_sessions s ON s.id=p.parent_session_id "
             "WHERE c.depth<32 AND s.delegator_key=%s AND s.human_id=%s AND s.agent_id=%s AND s.project_id=%s) "
             "SELECT 1 FROM chain WHERE id=%s LIMIT 1",
-            (binding.session_id, binding.delegator, *binding.ids.values(), binding.delegator,
-             *binding.ids.values(), historical),
+            (
+                binding.session_id,
+                binding.delegator,
+                *binding.ids.values(),
+                binding.delegator,
+                *binding.ids.values(),
+                historical,
+            ),
         ).fetchone()
         return row is not None
 
