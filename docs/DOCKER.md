@@ -1,13 +1,13 @@
 # Agent Docker / authenticated HTTP (#13)
 
-This packages the same Agent MCP runtime as stdio. PostgreSQL and inference stay
+This packages one Agent domain service with an internal HTTP API and an external MCP facade. PostgreSQL and inference stay
 external. No GPU devices, model weights, Docker socket, DB bootstrap, runtime
 activation, Hub configuration or production deployment is performed.
 
 ## Security contract
 
 - HTTP is a private service-to-service endpoint, not a public OAuth MCP service.
-  Every MCP request requires one operator-configured bearer credential. Its scope
+  Every internal API or MCP request requires one operator-configured bearer credential. Its scope
   is the fixed human/Agent/project configured in default mode. Never share that
   default instance/token among unrelated users or tenants. Explicit shared mode
   authenticates a trusted delegator and requires operator-controlled exact grants;
@@ -16,7 +16,7 @@ activation, Hub configuration or production deployment is performed.
   There is no default credential. Missing/invalid credentials fail startup.
   Rotating it requires restarting the process.
 - Host allowlist is explicit; browser Origin headers are rejected. No CORS.
-  Host checks and authentication happen before MCP dispatch. No forwarded
+  Host checks and authentication happen before internal API or MCP dispatch. No forwarded
   identity headers are trusted. /healthz only returns process liveness.
 - Publish only host loopback by default. A trusted TLS reverse proxy or private
   network gateway is required for any non-loopback connection. Docker publication
@@ -56,11 +56,15 @@ with agents/<agent-key>/agent.toml and its listed Markdown files. Missing explic
 fails rather than silently changing identity. Do not mount unrelated host folders.
 Never bake .env or private context into the image.
 
-Connect a trusted client to /mcp with Authorization: Bearer <secret>. A future Hub
-config uses local tools health/ask and namespace agent; Hub configuration is a
-separate reviewed change. This token authenticates the service caller, not each
-user behind a Hub. Shared mode advertises a different catalog; review parity
-before enabling it and retain Studio's independent account authorization gate.
+Studio connects to `/api/v1` using the authenticated internal contract in
+[INTERNAL_EXECUTION.md](INTERNAL_EXECUTION.md). It sends ordinary domain request
+JSON, without MCP or JSON-RPC. Shared mode additionally requires the configured
+delegator, exact DB membership/grants and Studio's independent account boundary.
+
+External MCP clients connect to `/mcp` with the same operator bearer credential;
+fixed/shared modes advertise different catalogs. Review the exact external catalog
+before Hub registration. Neither route turns the service token into a human identity
+or creates a second conversation/request authority.
 
 ## Settings
 
@@ -74,7 +78,8 @@ before enabling it and retain Studio's independent account authorization gate.
 | FLAMORIS_HUMAN_KEY / AGENT_KEY / PROJECT_KEY | fixed configured principal scope |
 | FLAMORIS_HOST_KEY / APPLICATION_KEY / MODEL_KEY | existing runtime references |
 | PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD | external PostgreSQL |
-| INTELLIGENCE_BASE_URL / INTELLIGENCE_MODEL | configured inference endpoint/model |
+| INTELLIGENCE_BASE_URL / INTELLIGENCE_MODEL | configured direct llama.cpp base URL/model |
+| AGENT_INTELLIGENCE_TARGET / AGENT_INTELLIGENCE_TARGETS | approved local target / opt-in settings target registry; see INTERNAL_EXECUTION.md |
 
 Allowed hosts are comma-separated exact Host header values, with optional ports;
 no wildcard. Add only the actual internal/proxy hostname used to reach this service.
@@ -88,7 +93,7 @@ The console and stdio commands remain available by overriding the image command.
 ## Verification
 
 CI builds/runs the image, verifies installed entrypoints/manifest context resources and liveness,
-and rejects unauthenticated MCP requests without real services. Offline tests
-exercise authenticated MCP initialization and asks using fakes. Phase 0's live
+and rejects unauthenticated internal API and MCP requests without real services. Offline tests
+exercise both authenticated transports using the same domain service and fake providers. Phase 0's live
 console acceptance was completed in #2; a new HTTP deployment still requires
 its own operational validation.

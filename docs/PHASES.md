@@ -1,310 +1,53 @@
-# FLAMORIS AI Agent Phases
-
-This document defines the staged modernization path for the imported FLAMORIS AI Agent baseline.
-
-The goal is to preserve working Agent-owned state and behavior while replacing the old model/runtime coupling incrementally.
-
-## Track C coordination
-
-Canonical cross-repository sequence: [flamoris-ai roadmap](https://github.com/flamoris-jp/flamoris-ai/blob/main/docs/ROADMAP.md).
-Progress authority: [Track C tracker](https://github.com/flamoris-jp/flamoris-ai/issues/7).
-
-| Step | Owning Issue / gate |
-|---|---|
-| Repository foundation | [#6](https://github.com/flamoris-jp/flamoris-ai-agent/issues/6) |
-| Previous-conversation trust boundary | [#7](https://github.com/flamoris-jp/flamoris-ai-agent/issues/7) |
-| Phase 0 runtime acceptance | [#2](https://github.com/flamoris-jp/flamoris-ai-agent/issues/2), including live PostgreSQL/restart evidence |
-| Phase 1 client boundary | [#10](https://github.com/flamoris-jp/flamoris-ai-agent/issues/10), after Phase 0 acceptance |
-| Phase 2 Agent MCP | [#11](https://github.com/flamoris-jp/flamoris-ai-agent/issues/11), after the client boundary |
-| Phase 3 Intelligence MCP adapter | After Track B's public contract is stable |
-
-The original migration document called Intelligence integration Phase 2 and
-Memory/Tools Phases 3/4. The integrated roadmap inserts **Agent MCP as Phase 2**;
-those later phases are now 3/4/5. Historical imported records remain unchanged.
-
-Direct llama.cpp access remains the current Phase 0 adapter. Phase 0 live
-acceptance was completed in #2; offline tests and completed PRs alone would not
-have substituted for it. See [the historical evidence template](PHASE_0_ACCEPTANCE.md).
-
-On 2026-09-26 the user authorized sequential offline implementation of
-#10 → #11 → #13 (Docker/HTTP) before #2 live acceptance. The phases below retain
-their dependency order; live acceptance gates production readiness, not creation
-of separately reviewable stacked implementation PRs.
-
-## Current baseline
-
-The imported baseline already separates Agent-facing state from model identity:
-
-```text
-Agent identity / personality
-Conversation
-Knowledge
-Memory
-Runtime provenance
-Relay
-Ops
-        │
-        ▼
-Model/runtime call
-```
-
-The original implementation used:
-
-```text
-Ollama
-└─ Qwen-based legacy Agent model
-```
-
-The first modernization target is:
-
-```text
-llama.cpp
-└─ GPT-OSS 20B
-```
-
-The imported PostgreSQL schema and Agent-owned state are migration inputs and should remain unchanged unless a concrete incompatibility is found.
-
----
-
-## Phase 0 — Run the existing Agent on GPT-OSS
-
-### Goal
-
-Prove that the existing Agent architecture can run with GPT-OSS by replacing only the model/runtime integration boundary.
-
-This phase is intentionally small.
-
-### Runtime target
-
-Phase 0 targets a configured GPT-OSS runtime through llama.cpp's OpenAI-compatible HTTP API. Verify the deployed runtime separately; this document is not live service status.
-
-Expected local endpoint:
-
-```text
-http://127.0.0.1:8081
-```
-
-Expected chat endpoint:
-
-```text
-POST /v1/chat/completions
-```
-
-### Preserve as-is unless required
-
-Do not redesign these areas in Phase 0:
-
-- Agent identity
-- Agent personality and character context
-- prompt/context composition
-- PostgreSQL schema
-- conversations
-- messages
-- previous-conversation loading
-- knowledge tables
-- memory tables
-- relay tables
-- ops tables
-- runtime provenance model
-
-### Change
-
-Replace the current Ollama-specific request path with a small intelligence client boundary.
-
-Recommended shape:
-
-```text
-src/flamoris_ai_agent
-      │
-      ▼
-IntelligenceClient
-      │
-      ▼
-llama.cpp OpenAI-compatible API
-      │
-      ▼
-GPT-OSS 20B
-```
-
-The first implementation may support only llama.cpp.
-
-Do not introduce a large provider framework in this phase.
-
-### Configuration
-
-Remove direct Ollama assumptions from the active runtime path.
-
-Configuration should describe the intelligence endpoint rather than an Ollama installation.
-
-Example conceptual values:
-
-```text
-INTELLIGENCE_BASE_URL=http://127.0.0.1:8081
-INTELLIGENCE_MODEL=<model id exposed by llama.cpp>
-```
-
-Exact variable names may be selected during implementation, but they should not encode Ollama if the value is provider-neutral.
-
-### Required validation
-
-Phase 0 is complete when all of the following are confirmed:
-
-1. GPT-OSS is reachable through the configured llama.cpp endpoint.
-2. The Agent starts successfully.
-3. A user message receives a GPT-OSS response.
-4. The conversation is written to PostgreSQL.
-5. The runtime instance is recorded.
-6. The Agent exits cleanly.
-7. After restart, the previous conversation can be loaded.
-8. Existing Agent identity remains stable across the model switch.
-9. No real credentials or machine secrets are added to the repository.
-
-### Explicitly out of scope
-
-- redesigning Memory
-- adding pgvector
-- redesigning Knowledge retrieval
-- implementing long-term memory extraction
-- tool execution
-- multi-agent orchestration
-- replacing the PostgreSQL schema
-- introducing a daemon/service architecture
-- moving to Intelligence MCP
-- UI work
-- migration to a new programming language/framework
-
----
-
-## Phase 1 — Stabilize the Agent runtime boundary
-
-Implementation authority: [#10](https://github.com/flamoris-jp/flamoris-ai-agent/issues/10).
-
-### Goal
-
-After Phase 0 proves the old architecture still works, isolate model execution cleanly from Agent-owned state.
-
-Likely work:
-
-- define a narrow intelligence client interface;
-- normalize request/response/error handling;
-- remove remaining provider-specific assumptions from Agent code;
-- add focused tests around prompt construction, conversation persistence, and provider failure behavior;
-- document ownership boundaries between Agent state and intelligence execution.
-
-The implementation should remain provider-neutral, but should avoid speculative abstraction.
-
----
-
-## Phase 2 — Agent MCP surface
-
-Implementation authority: [#11](https://github.com/flamoris-jp/flamoris-ai-agent/issues/11).
-
-Expose a deliberately small Agent MCP surface inside this repository. Initial
-candidate capabilities are health and ask. Exact tool names, transport, caller
-scope, conversation lifecycle, concurrency, cancellation, and durable failure
-semantics must be defined before implementation.
-
-Keep MCP transport thin and reuse the Agent runtime. The Agent remains the single
-owner of identity, conversations, memory, knowledge context, and policy.
-Do not expose internal Memory/Knowledge CRUD or tool execution merely because
-MCP exists. Do not treat a caller-supplied conversation ID as authorization.
-
-An initial local-only surface must clearly state its trust boundary. Remote/multi-user
-access needs explicit authentication and conversation isolation. The current
-single-user previous-conversation lookup is not a remote authorization mechanism.
-
-Add a lazy Agent upstream to MCP Hub only after the Agent transport/catalog is
-stable. Avoid double-prefixing the eventual `agent.*` namespace.
-
----
-
-## Phase 3 — Intelligence MCP integration
-
-### Goal
-
-Replace direct llama.cpp access with the FLAMORIS Intelligence MCP when that boundary is ready.
-
-Target:
-
-```text
-flamoris-ai-agent
-        │
-        ▼
-flamoris-intelligence-mcp
-        │
-        ▼
-provider/runtime
-        │
-        └─ llama.cpp / GPT-OSS
-```
-
-The Agent remains authoritative for:
-
-- persistent Agent identity;
-- conversations;
-- memory;
-- knowledge references and retrieval context;
-- prompts and Agent policy;
-- long-lived Agent workflow context.
-
-Intelligence MCP remains authoritative for model/provider execution and routing.
-
-Phase 3 should not require a rewrite of Agent persistence.
-
----
-
-## Phase 4 — Memory and Knowledge evolution
-
-Only after the GPT-OSS runtime path is stable should the imported Memory/Knowledge design be reviewed.
-
-Possible work:
-
-- durable memory lifecycle;
-- provenance;
-- retention/deletion;
-- memory visibility and sharing;
-- retrieval rules;
-- pgvector or another retrieval index;
-- memory candidate extraction from conversations.
-
-The imported schema is a useful starting point, not automatically the final design.
-
----
-
-## Phase 5 — Tools and orchestration
-
-Add explicit Agent capabilities only after the Agent runtime and memory boundaries are stable.
-
-Possible work:
-
-- tool registry;
-- capability checks;
-- auditable tool calls;
-- explicit product commands/queries;
-- Generation MCP integration;
-- persistent orchestration metadata;
-- bounded multi-agent coordination.
-
-Product repositories remain authoritative for their own document and editing state.
-
----
-
-## Migration principle
-
-Prefer this sequence:
-
-```text
-preserve
-→ run
-→ observe
-→ isolate
-→ modernize
-```
-
-Do not redesign working Agent-owned state merely because the model runtime changes.
-
-The first question for every migration should be:
-
-> Does this belong to the Agent, or was it only an implementation detail of the old model runtime?
-
-If it belongs to the Agent and still works, preserve it until evidence shows a reason to change it.
+# FLAMORIS AI Agent implementation and remaining phases
+
+Current cross-repository authority is [AI #18](https://github.com/flamoris-jp/flamoris-ai/issues/18)
+and [AI progress](https://github.com/flamoris-jp/flamoris-ai/blob/main/PROGRESS.md).
+The original imported phase order is historical and must not reintroduce internal
+MCP execution or repeat completed work.
+
+## Implemented baseline
+
+| Scope | Current source / evidence |
+| --- | --- |
+| Imported state and Phase 0 | Existing Agent/personality/conversation schema and configured local llama.cpp console; historical acceptance in [Phase 0](PHASE_0_ACCEPTANCE.md) |
+| Client boundary | `ExecutionClient`, ordered messages, exact model identity and bounded results; [contract](EXECUTION_CONTRACT.md) |
+| External facade | Fixed/shared Agent MCP and authenticated `/mcp`; optional external ChatGPT/Hub access |
+| Internal execution | Agent #40 deletes outbound MCP and uses the shared non-MCP provider adapter; [internal HTTP/direct contract](INTERNAL_EXECUTION.md) |
+| Studio integration | Principal/delegator grants, scoped sessions, Image context, durable request/continuation fences and Agent HTTP `/api/v1` |
+| Assistant settings | Opt-in personality revisions and granted local/OpenAI model selection; [settings](ASSISTANT_SETTINGS_V1.md) |
+
+Studio -> Agent HTTP -> `ExecutionClient` -> shared `flamoris_intelligence` is the
+implemented personality path. Raw inference bypasses Agent. Agent stores its own
+personality and conversations; provider runtime/cache state is not Agent memory.
+A native AI Runtime adapter is not introduced by the shared HTTP/provider library.
+
+Configured OpenAI targets require an explicitly granted settings session,
+operator credentials/cost ceilings and consent for the whole assembled context.
+Local-only or legacy-unclassified history cannot be exported. A changed target or
+personality starts a fresh appropriate session; old conversations are not silently
+retargeted. Logical user isolation does not promise concurrent GPU inference.
+
+## Operational acceptance still separate
+
+A source merge does not deploy Agent, apply its schema, create grants, qualify an
+installed model or change host runtime state. Current HTTP/settings deployment
+needs actual principal/DB/model/restart/two-user receipts and preserved unknown
+request fences. The old Phase 0 receipt describes its old deployment only.
+
+## Deferred functionality
+
+- Agent-owned memory, knowledge retrieval and project continuity need a concrete
+  separately reviewed storage, authorization and retention contract.
+- Tool use needs explicit capability/permission policy, structured bounded calls,
+  audit and side-effect uncertainty handling. Internal FLAMORIS execution uses
+  non-MCP interfaces; external MCP is a facade, not the internal tool bus.
+- Structured draft proposals and additional media contexts need their own revision,
+  ownership, decoding and export rules. Advice does not directly edit Studio drafts
+  or submit generation.
+- Native Runtime integration remains separately scoped. Generation Controller is
+  unimplemented; no removed custom graph/v3 subsystem is migrated or recreated.
+
+Historical imported planning is preserved in `history/`. The
+[pre-audit phase document](https://github.com/flamoris-jp/flamoris-ai-agent/blob/c6adca2727805a62348e2aade219ea20a8e2ee99/docs/PHASES.md)
+records the former outbound-Intelligence-MCP plan; it is superseded by the implemented
+internal contract and does not authorize fallback to that deleted adapter.
