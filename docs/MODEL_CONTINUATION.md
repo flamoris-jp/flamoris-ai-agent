@@ -1,10 +1,10 @@
 # Model switching within a conversation
 
-Agent #42 adds opt-in internal HTTP `POST /api/v1/sessions/continue` with
+Accepted Agent #43 (scope: Agent #42), matched with Studio #66, adds opt-in internal HTTP `POST /api/v1/sessions/continue` with
 `session_id`, `request_id`, `model_id`, and `remote_consent`. It is available
 only with shared principals and settings enabled; the external MCP catalog is
 unchanged. Apply source migration 005 after 002–004 during a separately approved
-rollout. This PR does not apply it to a live database.
+rollout. Source is merged; no migration has been applied to a live database.
 
 The current authorized session must be valid. The handoff creates a new immutable
 principal/model snapshot with the same human, Agent and project, records its

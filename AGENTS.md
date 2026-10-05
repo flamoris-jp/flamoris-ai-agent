@@ -4,12 +4,13 @@ This repository owns optional persistent Agent identity/personality, conversatio
 
 ## Current authorization
 
-The subsequent pre-deployment request (Agent #42) authorizes same-conversation
-model switching, source migrations, deterministic tests and reviewable PRs.
-This feature scope supersedes the earlier feature hold below; merging and live
-migration/grant/credential/provider/deployment actions are not authorized here.
+Same-conversation model switching is accepted in main through Agent #43 and
+matched Studio #66 after the explicit merge instruction. Follow
+docs/MODEL_CONTINUATION.md and AI PROGRESS §4.9. Source migration 005 is committed;
+live migration/grant/credential/provider/deployment actions remain separate.
+The current request aligns documentation and postpones live acceptance.
 
-The user's subsequent explicit instruction authorizes source cleanup, internal connections, deterministic tests, review/fixes and merges under #18. No DB/data/grant/credential change, live provider call or deployment is included. Controller implementation and Generation/reference-image expansion stay held.
+The user's subsequent explicit instruction authorizes source cleanup, internal connections, deterministic tests, review/fixes and merges under #18. No DB/data/grant/credential change, live provider call or deployment is included. Controller implementation and the bounded ComfyWorkFlow/reference-image profile are accepted in their owning repositories; further feature expansion requires its own scope.
 
 ## Target versus as-built
 

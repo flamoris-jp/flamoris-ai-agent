@@ -44,8 +44,9 @@ request fences. The old Phase 0 receipt describes its old deployment only.
 - Structured draft proposals and additional media contexts need their own revision,
   ownership, decoding and export rules. Advice does not directly edit Studio drafts
   or submit generation.
-- Native Runtime integration remains separately scoped. Generation Controller is
-  unimplemented; no removed custom graph/v3 subsystem is migrated or recreated.
+- Native Runtime integration remains separately scoped. Generation Controller
+  and its bounded checkpoint registration profile are accepted in their owners;
+  no removed custom graph/v3 subsystem is migrated or recreated.
 
 Historical imported planning is preserved in `history/`. The
 [pre-audit phase document](https://github.com/flamoris-jp/flamoris-ai-agent/blob/c6adca2727805a62348e2aade219ea20a8e2ee99/docs/PHASES.md)

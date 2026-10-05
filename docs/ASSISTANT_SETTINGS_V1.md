@@ -14,7 +14,7 @@ The implemented registry variable is **`AGENT_INTELLIGENCE_TARGETS`**. This lite
 
 Authorization covers the full assembled personality, previous turns and explicit Studio attachments. Local-only/legacy history is not exported. Callers supply no endpoint, credential, policy or tool grant. There is no hidden fallback.
 
-Selection, registry digest and source are persisted per principal session. Availability/ask recheck session, enabled grant and exact target digest. A configuration change invalidates rather than retargets. IDs map to separately registered immutable `runtime.models` identities; history/provenance is not rewritten. Continuations keep the selected model; changing it requires a new session/conversation.
+Selection, registry digest and source are persisted per principal session. Availability/ask recheck session, enabled grant and exact target digest. A configuration change invalidates rather than retargets. IDs map to separately registered immutable `runtime.models` identities; history/provenance is not rewritten. Each principal session keeps its immutable selected model. Explicit internal [model continuation](MODEL_CONTINUATION.md) creates an authorized same-principal child session while preserving the logical conversation and original personality snapshot; it never silently retargets an existing session.
 
 ## Personality revisions and permissions
 

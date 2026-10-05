@@ -23,6 +23,7 @@ invalid encodings and malformed objects fail before service dispatch.
 | GET `/api/v1/health` | Existing safe service health; liveness is not model/DB readiness |
 | POST `/api/v1/ask` | Fixed-principal mode only |
 | POST `/api/v1/sessions/open` | Shared `sessions.open` |
+| POST `/api/v1/sessions/continue` | Shared opt-in settings; explicit immutable same-principal model handoff, no inference; see [MODEL_CONTINUATION.md](MODEL_CONTINUATION.md) |
 | POST `/api/v1/ask-scoped` | Shared `ask_scoped` |
 | POST `/api/v1/ask-availability` | Shared read-only availability probe |
 | POST `/api/v1/models/allowed` | Shared opt-in settings model grants |
@@ -32,8 +33,10 @@ Operations appear only in the catalog for their enabled mode. Responses retain
 the existing domain DTO, including fixed `{ok: false, error: {code: ...}}`
 failures, principal/session/request identity and safe public provenance. Existing
 request UUIDs, duplicate/uncertain handling, revocation checks, consent, personality
-head locks and continuation compatibility are unchanged. This adds no DB schema
-or import and does not convert a service token into a user identity.
+head locks and continuation compatibility remain enforced. The initial transport
+cleanup added no DB schema or import. The later explicit handoff requires source
+migration 005 after 002–004; it does not convert a service token into a user identity.
+The external MCP catalog remains unchanged.
 
 ## Execution configuration
 
@@ -80,5 +83,6 @@ run in CI without GPUs, private personas, weights or paid inference. These check
 do not establish live model/DB/host readiness or physical shared-host capacity.
 
 Native AI Runtime embedding remains a separate implemented Runtime contract; no
-new Agent-to-native Runtime adapter is introduced. Generation Controller remains
-unimplemented and is not a destination for the retired subsystem.
+new Agent-to-native Runtime adapter is introduced. Generation Controller is
+implemented in its owning repository; its new bounded registration profile does
+not restore the retired custom/v3/Runtime-delegation subsystem.

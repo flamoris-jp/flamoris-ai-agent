@@ -17,7 +17,7 @@ Agent Support supplies personality/conversation. Raw inference and generation by
 
 Transport authentication is not a human identity. Studio binds its authenticated account to an authorized principal; Agent independently verifies membership and delegator scope before state creation. Do not redo completed principal work merely because an old proposal said 'implement first'.
 
-Bind human/Agent/project immutably to the session. Scope request IDs, parents, conversations and provenance to that authorization. A new principal/model uses a new appropriate session; reject cross-owner continuation. Do not share a mutable global AgentSession across callers or fall back to a default principal after rejection. Keep revocation/admission semantics and bounded concurrency; logical isolation does not promise simultaneous GPU inference.
+Bind human/Agent/project immutably to the session. Scope request IDs, parents, conversations and provenance to that authorization. A new principal/model uses a new appropriate session; reject cross-owner continuation. Explicit [model continuation](MODEL_CONTINUATION.md) records same-principal immutable child lineage and preserves the logical Studio conversation; an unrelated fresh session cannot inherit it. Do not share a mutable global AgentSession across callers or fall back to a default principal after rejection. Keep revocation/admission semantics and bounded concurrency; logical isolation does not promise simultaneous GPU inference.
 
 ## Context and persistence
 
