@@ -1,7 +1,6 @@
 """Immutable handoffs and real scoped historical context, without provider calls."""
 
 import asyncio
-
 from uuid import uuid4
 
 import psycopg
