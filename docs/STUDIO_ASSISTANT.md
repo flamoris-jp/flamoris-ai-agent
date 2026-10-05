@@ -31,7 +31,7 @@ Agent remains the durable conversation/persona owner. Explicitly attached contex
 
 ## Execution and availability
 
-Use the narrow [ExecutionClient contract](EXECUTION_CONTRACT.md) in the corrected target. The later removal inventory must retain genuine identity/budget/provenance checks and remove only translation required by the obsolete MCP hop. Do not duplicate adapters or introduce a central service merely to make them replaceable.
+Use the narrow [ExecutionClient contract](EXECUTION_CONTRACT.md) in the corrected target. The implemented cleanup retains identity/budget/provenance checks and removes translation required only by the obsolete outbound MCP hop. Do not duplicate adapters or introduce a central service merely to make them replaceable.
 
 Target/export selection remains policy over authorized configured identities. A remote request requires consent for all assembled personality/history/attachments, not only the newest text. Unknown classification or local-only/legacy history fails closed. Local outage or busy does not authorize remote fallback. Credentials stay in operator configuration, never browser fields, persona or prompts.
 
@@ -45,6 +45,6 @@ Initial advice is text under the existing contract. Future structured proposals,
 
 ## Review and later acceptance
 
-The Intelligence-first task must define exact source removals and a functioning non-MCP contract, preserving principal/continuation isolation, revocation, prompt trust, context bounds, full-context export refusal, identity matching, truthful availability, partial-output rejection, duplicate/unknown behavior and credential redaction. Test with fake providers first; PostgreSQL/provider/restart/two-user live checks are separate evidence.
+Agent #40 supplies the functioning non-MCP contract and removes the obsolete adapter, preserving principal/continuation isolation, revocation, prompt trust, context bounds, full-context export refusal, identity matching, truthful availability, partial-output rejection, duplicate/unknown behavior and credential redaction. Test with fake providers first; PostgreSQL/provider/restart/two-user live checks are separate evidence.
 
 The renewed #18 instruction authorizes the internal source cleanup and connections. No DB migration, Generation Controller, ComfyWorkFlow/reference-image expansion or live operation is included. Historical #15 sequencing does not override #18.

@@ -30,12 +30,12 @@ bound. Additional fields, paths/URLs, executable graph, policy, model selection,
 tool commands or binary attachments are refused. No generic schema-driven context
 for unreviewed Music/Speech/Video profiles is introduced.
 
-Workflow metadata contains safe id (max 128 ASCII identifier characters), positive
+The retained `workflow` context DTO contains safe id (max 128 ASCII identifier characters), positive
 integer version, lowercase SHA-256 digest, profile=image/profile_revision=1.
 Asset descriptors contain canonical Studio UUID, sanitized display_name (max 100
 ASCII letters/digits/underscore/dot/hyphen), media_kind=image, exact PNG/JPEG/WebP
 MIME and optional size_bytes (0–1 GiB). These identifiers never cause an Agent file
-fetch. Studio must reauthorize every selected asset and exact Workflow, construct
+fetch. Studio must reauthorize every selected asset and selected Image template, construct
 safe metadata itself and bind the product/draft revision before dispatch. Agent
 validates the envelope under the authenticated delegator/session but does not
 establish Studio product ownership from its fields.
@@ -85,7 +85,7 @@ inference, paid request, model switch, GPU activation or automatic fallback occu
 
 Direct mode remains dependencies_unknown for this new shared-assistant query;
 health(alive, dependencies=not_checked) never implies ready. An explicit approved
-MCP target whose provider is unreachable reports offline. Bad/unknown prerequisites
+A direct target whose provider is unreachable reports offline. Bad/unknown prerequisites
 are unavailable/unknown. Current Intelligence configuration discovery/provider
 health do not attest the exact alias is loaded; execution performs its own
 validation and may reject it. Live model qualification remains a separate gate.

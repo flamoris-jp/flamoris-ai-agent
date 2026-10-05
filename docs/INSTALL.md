@@ -125,7 +125,10 @@ console stores messages in PostgreSQL and closes lifecycle rows on clean exit.
 Do not rerun the initial schema against an existing deployment as a routine
 upgrade; inspect migrations and preserve its identities.
 
-## 6. Optional MCP and Docker
+## 6. Internal HTTP, optional external MCP and Docker
+
+The internal `/api/v1` API shares the Agent service with external MCP; see
+[INTERNAL_EXECUTION.md](INTERNAL_EXECUTION.md) for direct target and shared-principal configuration.
 
 The same single-principal Agent can expose stdio MCP via `flamoris-agent-mcp`.
 Authenticated private HTTP and the repository's current Compose path are
