@@ -100,7 +100,7 @@ class ScopedAgentService(AgentService):
         # of abandoning it while the process tears down its authority.
         task = self.continuation_task
         if task is not None:
-            await asyncio.shield(task)
+            await asyncio.shield(asyncio.gather(task, return_exceptions=True))
         await super().aclose()
 
     async def continue_session(self, raw):

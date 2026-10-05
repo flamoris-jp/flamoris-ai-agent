@@ -1,10 +1,13 @@
 """Immutable handoffs and real scoped historical context, without provider calls."""
 
+import asyncio
+
 from uuid import uuid4
 
 import psycopg
 import pytest
 from psycopg.types.json import Jsonb
+from test_internal_api import internal
 from test_principals_postgres import DSN, authorization, database, scoped_store_open
 from test_settings_postgres import settings_db
 
@@ -166,3 +169,29 @@ async def test_http_domain_retry_rejects_changed_target_and_revoked_grants(
     finally:
         authenticated_delegator.reset(token)
         await service.aclose()
+
+
+async def test_continuation_http_contract_and_failed_shutdown_drain(settings_db, monkeypatch):
+    principals, _, _, bound, _ = settings_db
+    monkeypatch.setenv("AGENT_SETTINGS_ENABLED", "1")
+    source = selected(principals, bound.keys)
+    service = ScopedAgentService(principals)
+    raw = {
+        "session_id": str(source.session_id),
+        "request_id": str(uuid4()),
+        "model_id": "api",
+        "remote_consent": True,
+    }
+    async with internal(service) as client:
+        capabilities = (await client.get("/api/v1/capabilities")).json()
+        assert "sessions.continue" in capabilities["operations"]
+        result = (await client.post("/api/v1/sessions/continue", json=raw)).json()
+        assert result["ok"] and result["session_id"] != raw["session_id"]
+        assert (await client.post("/api/v1/sessions/continue", json=raw)).json() == result
+
+    async def failed_transaction():
+        raise IntelligenceError("model_forbidden")
+
+    service.continuation_task = asyncio.create_task(failed_transaction())
+    await service.aclose()
+    assert service.closing
