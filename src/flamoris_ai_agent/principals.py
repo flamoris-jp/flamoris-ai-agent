@@ -78,7 +78,8 @@ class PrincipalSessions:
                     NAMESPACE_URL, f"flamoris-handoff:{delegator}:{parent_id}:{request_uuid}"
                 )
                 existing = conn.execute(
-                    "SELECT session_id FROM chat.principal_continuations WHERE parent_session_id=%s",
+                    "SELECT session_id FROM chat.principal_continuations "
+                    "WHERE parent_session_id=%s",
                     (parent_id,),
                 ).fetchone()
                 if existing:
@@ -99,7 +100,8 @@ class PrincipalSessions:
                 pending = conn.execute(
                     "SELECT 1 FROM chat.conversations c WHERE c.metadata->>'principal_session'=%s "
                     "AND (c.status <> 'closed' OR c.ended_at IS NULL OR NOT EXISTS "
-                    "(SELECT 1 FROM chat.messages m WHERE m.conversation_id=c.id AND m.role='assistant')) LIMIT 1",
+                    "(SELECT 1 FROM chat.messages m WHERE m.conversation_id=c.id "
+                    "AND m.role='assistant')) LIMIT 1",
                     (str(parent_id),),
                 ).fetchone()
                 if pending:
@@ -107,7 +109,8 @@ class PrincipalSessions:
                 depth = conn.execute(
                     "WITH RECURSIVE chain AS (SELECT session_id,parent_session_id,1 AS depth "
                     "FROM chat.principal_continuations WHERE session_id=%s UNION ALL "
-                    "SELECT p.session_id,p.parent_session_id,c.depth+1 FROM chat.principal_continuations p "
+                    "SELECT p.session_id,p.parent_session_id,c.depth+1 "
+                    "FROM chat.principal_continuations p "
                     "JOIN chain c ON p.session_id=c.parent_session_id WHERE c.depth<32) "
                     "SELECT COALESCE(max(depth),0) FROM chain",
                     (parent_id,),
@@ -154,7 +157,8 @@ class PrincipalSessions:
                 configure(conn, binding)
             if continue_from is not None:
                 conn.execute(
-                    "INSERT INTO chat.principal_continuations(session_id,parent_session_id,request_id) "
+                    "INSERT INTO chat.principal_continuations"
+                    "(session_id,parent_session_id,request_id) "
                     "VALUES (%s,%s,%s)",
                     (session_id, parent_id, request_uuid),
                 )
@@ -173,10 +177,12 @@ class PrincipalSessions:
             return False
         row = conn.execute(
             "WITH RECURSIVE chain AS (SELECT s.id,1 AS depth FROM chat.principal_sessions s "
-            "WHERE s.id=%s AND s.delegator_key=%s AND s.human_id=%s AND s.agent_id=%s AND s.project_id=%s "
+            "WHERE s.id=%s AND s.delegator_key=%s AND s.human_id=%s "
+            "AND s.agent_id=%s AND s.project_id=%s "
             "UNION ALL SELECT s.id,c.depth+1 FROM chain c JOIN chat.principal_continuations p "
             "ON p.session_id=c.id JOIN chat.principal_sessions s ON s.id=p.parent_session_id "
-            "WHERE c.depth<32 AND s.delegator_key=%s AND s.human_id=%s AND s.agent_id=%s AND s.project_id=%s) "
+            "WHERE c.depth<32 AND s.delegator_key=%s AND s.human_id=%s "
+            "AND s.agent_id=%s AND s.project_id=%s) "
             "SELECT 1 FROM chain WHERE id=%s LIMIT 1",
             (
                 binding.session_id,

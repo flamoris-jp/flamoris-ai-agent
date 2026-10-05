@@ -49,7 +49,8 @@ def seed(dsn, bound, *, complete=True):
         from flamoris_ai_agent.mcp_store import scope_id
 
         conn.execute(
-            "INSERT INTO chat.conversations(id,project_id,primary_agent_id,status,ended_at,system_context,metadata) "
+            "INSERT INTO chat.conversations"
+            "(id,project_id,primary_agent_id,status,ended_at,system_context,metadata) "
             "VALUES (%s,%s,%s,'closed',now(),%s,%s)",
             (
                 parent,
@@ -67,7 +68,8 @@ def seed(dsn, bound, *, complete=True):
             ),
         )
         conn.execute(
-            "INSERT INTO chat.participants(conversation_id,human_id,display_name) VALUES (%s,%s,'first')",
+            "INSERT INTO chat.participants(conversation_id,human_id,display_name) "
+            "VALUES (%s,%s,'first')",
             (parent, bound.human_id),
         )
         for role, content in [
