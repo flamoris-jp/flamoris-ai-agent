@@ -14,7 +14,7 @@ def operations(service):
         names.extend(["sessions.open", "ask_scoped", "ask_availability"])
         if getattr(service, "settings_enabled", False):
             names.extend(
-                ["models.allowed", "personality.get", "personality.history", "personality.save"]
+                ["sessions.continue", "models.allowed", "personality.get", "personality.history", "personality.save"]
             )
     else:
         names.append("ask")
@@ -72,6 +72,7 @@ def routes(service):
     calls = {
         "ask": ("ask", service.ask),
         "sessions.open": ("sessions/open", getattr(service, "open_session", None)),
+        "sessions.continue": ("sessions/continue", getattr(service, "continue_session", None)),
         "ask_scoped": ("ask-scoped", getattr(service, "ask_scoped", None)),
         "ask_availability": ("ask-availability", getattr(service, "availability", None)),
     }

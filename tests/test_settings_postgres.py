@@ -39,6 +39,11 @@ def settings_db(authorization, monkeypatch):
         ).read_text()
         conn.execute(migration)
         conn.execute(migration)
+        continuation = (
+            Path(__file__).resolve().parents[1] / "db/migrations/005_model_continuations.sql"
+        ).read_text()
+        conn.execute(continuation)
+        conn.execute(continuation)
         conn.execute("RESET ROLE")
         import_personality(conn, "helper", "Helper", [{"title": "Identity", "content": "original"}])
         conn.execute(

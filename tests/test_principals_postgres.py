@@ -51,6 +51,8 @@ def database():
         retention = (root / "db/migrations/003_principal_retention.sql").read_text()
         conn.execute(retention)
         conn.execute(retention)
+        continuation = (root / "db/migrations/005_model_continuations.sql").read_text()
+        conn.execute(continuation)
     return DSN
 
 

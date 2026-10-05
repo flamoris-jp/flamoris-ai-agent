@@ -63,7 +63,6 @@ class MCPStore(PostgresStore):
               AND c.status = 'closed' AND c.ended_at IS NOT NULL
               AND c.metadata->>'client' = 'agent-mcp'
               AND c.metadata->>'scope' = %s
-              AND (c.metadata->>'principal_session') IS NOT DISTINCT FROM %s
               AND EXISTS (
                 SELECT 1 FROM chat.participants p
                 WHERE p.conversation_id = c.id AND p.human_id = %s)
@@ -77,7 +76,6 @@ class MCPStore(PostgresStore):
                 self.refs["project_id"],
                 self.refs["agent_id"],
                 self.scope,
-                str(self.binding.session_id) if self.binding else None,
                 self.refs["human_id"],
                 self.refs["human_id"],
                 self.refs["agent_id"],
@@ -85,13 +83,18 @@ class MCPStore(PostgresStore):
         ).fetchone()
         if not conversation:
             raise IntelligenceError("conversation_unavailable")
+        historical_session = conversation[4].get("principal_session")
+        same_session = historical_session == (str(self.binding.session_id) if self.binding else None)
+        if not same_session and (self.binding is None or not self.principals.continues_on(
+                self.conn, self.binding, historical_session)):
+            raise IntelligenceError("conversation_unavailable")
         self.previous_snapshot = conversation[3]
         selection = conversation[4].get("model_selection")
         expected = self.selection()
-        if selection != expected:
+        if same_session and selection != expected:
             raise IntelligenceError("model_selection_changed")
         # A remote conversation can only continue a previously admitted remote snapshot.
-        if self.model_option and self.model_option.target.data_flow == "remote_authorized":
+        if same_session and self.model_option and self.model_option.target.data_flow == "remote_authorized":
             if not selection or selection.get("data_flow") != "remote_authorized":
                 raise IntelligenceError("remote_export_forbidden")
         rows = self.conn.execute(
@@ -107,6 +110,20 @@ class MCPStore(PostgresStore):
             {"role": r[0], "sender": r[1], "content": r[2], "created_at": r[3]}
             for r in reversed(rows)
         ]
+        # Carry the existing bounded context window across one-shot Agent turns.
+        # These remain untrusted historical messages, never personality policy.
+        prior = conversation[3].get("previous_conversation") or {}
+        prior_messages = prior.get("messages", []) if isinstance(prior, dict) else []
+        if not isinstance(prior_messages, list) or len(prior_messages) > 12:
+            raise IntelligenceError("invalid_agent_context")
+        attachment = conversation[3].get("studio_context")
+        attached = ([{"role": "user", "sender": "Studio attachment", "created_at": conversation[1],
+                      "content": json.dumps(attachment, ensure_ascii=False, default=str)}] if attachment else [])
+        messages = [*prior_messages, *attached, *messages][-12:]
+        if any(not isinstance(m, dict) or m.get("role") not in {"user", "assistant"}
+               or not isinstance(m.get("sender"), str) or not isinstance(m.get("content"), str)
+               for m in messages):
+            raise IntelligenceError("invalid_agent_context")
         if any(len(m["sender"]) > 512 or len(m["content"].encode()) > 65536 for m in messages):
             raise IntelligenceError("input_too_large")
         if len(json.dumps(messages, default=str, ensure_ascii=False).encode()) > 65536:

@@ -4,6 +4,11 @@ This repository owns optional persistent Agent identity/personality, conversatio
 
 ## Current authorization
 
+The subsequent pre-deployment request (Agent #42) authorizes same-conversation
+model switching, source migrations, deterministic tests and reviewable PRs.
+This feature scope supersedes the earlier feature hold below; merging and live
+migration/grant/credential/provider/deployment actions are not authorized here.
+
 The user's subsequent explicit instruction authorizes source cleanup, internal connections, deterministic tests, review/fixes and merges under #18. No DB/data/grant/credential change, live provider call or deployment is included. Controller implementation and Generation/reference-image expansion stay held.
 
 ## Target versus as-built

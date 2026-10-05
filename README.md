@@ -25,6 +25,9 @@ The user authorized source cleanup and internal connections. This changes no DB 
 
 ## Existing contracts
 
+- [Same-conversation model switching](docs/MODEL_CONTINUATION.md) is proposed in
+  Agent #42 with source migration 005; deployment acceptance remains pending.
+
 - [Installation](docs/INSTALL.md) and [Agent context](docs/AGENT_CONTEXT.md)
 - [ExecutionClient](docs/EXECUTION_CONTRACT.md)
 - [Fixed-principal MCP contract](docs/MCP_CONTRACT.md)
