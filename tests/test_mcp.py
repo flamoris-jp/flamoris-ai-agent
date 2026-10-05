@@ -188,7 +188,6 @@ def test_parent_requires_exact_scope_and_closed_status():
         refs["project_id"],
         refs["agent_id"],
         scope_id(refs),
-        None,
         refs["human_id"],
         refs["human_id"],
         refs["agent_id"],

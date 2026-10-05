@@ -7,7 +7,7 @@ module grants no authority from a service credential or a session UUID alone.
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from flamoris_ai_agent import db
 from flamoris_ai_agent.execution import IntelligenceError
@@ -59,13 +59,64 @@ class PrincipalSessions:
     def __init__(self, connection_factory=None):
         self.connection_factory = connection_factory or db.get_connection
 
-    def open(self, delegator, keys: PrincipalKeys, *, configure=None):
+    def open(
+        self, delegator, keys: PrincipalKeys, *, configure=None, continue_from=None, request_id=None
+    ):
         key(delegator)
         if not isinstance(keys, PrincipalKeys):
             raise IntelligenceError("principal_unavailable")
         with self.connection_factory() as conn, conn.transaction():
             # Serialize the bounded session namespace, not inference/GPU work.
             conn.execute("SELECT pg_advisory_xact_lock(1179402567, 18)")
+            continuation_id = None
+            if continue_from is not None:
+                try:
+                    parent_id, request_uuid = UUID(str(continue_from)), UUID(str(request_id))
+                except (ValueError, TypeError, AttributeError):
+                    raise IntelligenceError("invalid_input") from None
+                continuation_id = uuid5(
+                    NAMESPACE_URL, f"flamoris-handoff:{delegator}:{parent_id}:{request_uuid}"
+                )
+                existing = conn.execute(
+                    "SELECT session_id FROM chat.principal_continuations "
+                    "WHERE parent_session_id=%s",
+                    (parent_id,),
+                ).fetchone()
+                if existing:
+                    if existing[0] != continuation_id:
+                        raise IntelligenceError("session_continuation_changed")
+                    current = self.require_on(conn, delegator, continuation_id)
+                    if current.keys != keys:
+                        raise IntelligenceError("principal_unavailable")
+                    return current
+                # Exclusive admission lock: asks acquire FOR SHARE in store.start.
+                # A pre-start ask cannot commit after this source is revoked.
+                conn.execute(
+                    "SELECT id FROM chat.principal_sessions WHERE id=%s FOR UPDATE", (parent_id,)
+                )
+                parent = self.require_on(conn, delegator, parent_id)
+                if parent.keys != keys:
+                    raise IntelligenceError("principal_unavailable")
+                pending = conn.execute(
+                    "SELECT 1 FROM chat.conversations c WHERE c.metadata->>'principal_session'=%s "
+                    "AND (c.status <> 'closed' OR c.ended_at IS NULL OR NOT EXISTS "
+                    "(SELECT 1 FROM chat.messages m WHERE m.conversation_id=c.id "
+                    "AND m.role='assistant')) LIMIT 1",
+                    (str(parent_id),),
+                ).fetchone()
+                if pending:
+                    raise IntelligenceError("conversation_incomplete")
+                depth = conn.execute(
+                    "WITH RECURSIVE chain AS (SELECT session_id,parent_session_id,1 AS depth "
+                    "FROM chat.principal_continuations WHERE session_id=%s UNION ALL "
+                    "SELECT p.session_id,p.parent_session_id,c.depth+1 "
+                    "FROM chat.principal_continuations p "
+                    "JOIN chain c ON p.session_id=c.parent_session_id WHERE c.depth<32) "
+                    "SELECT COALESCE(max(depth),0) FROM chain",
+                    (parent_id,),
+                ).fetchone()[0]
+                if depth >= 31:
+                    raise IntelligenceError("principal_capacity")
             row = conn.execute(
                 """
                 SELECT h.id, a.id, p.id
@@ -90,7 +141,7 @@ class PrincipalSessions:
             ).fetchone()
             if total >= MAX_SESSIONS or own >= MAX_DELEGATOR_SESSIONS:
                 raise IntelligenceError("principal_capacity")
-            session_id = uuid4()
+            session_id = continuation_id or uuid4()
             expires_at = conn.execute(
                 """
                 INSERT INTO chat.principal_sessions
@@ -104,7 +155,45 @@ class PrincipalSessions:
             binding = PrincipalBinding(session_id, delegator, keys, *row, expires_at)
             if configure is not None:
                 configure(conn, binding)
+            if continue_from is not None:
+                conn.execute(
+                    "INSERT INTO chat.principal_continuations"
+                    "(session_id,parent_session_id,request_id) "
+                    "VALUES (%s,%s,%s)",
+                    (session_id, parent_id, request_uuid),
+                )
+                conn.execute(
+                    "UPDATE chat.principal_sessions SET revoked_at=clock_timestamp() WHERE id=%s",
+                    (parent_id,),
+                )
             return binding
+
+    @staticmethod
+    def continues_on(conn, binding, historical_session):
+        """Only persisted, same-principal lineage authorizes historical context."""
+        try:
+            historical = UUID(str(historical_session))
+        except (ValueError, TypeError, AttributeError):
+            return False
+        row = conn.execute(
+            "WITH RECURSIVE chain AS (SELECT s.id,1 AS depth FROM chat.principal_sessions s "
+            "WHERE s.id=%s AND s.delegator_key=%s AND s.human_id=%s "
+            "AND s.agent_id=%s AND s.project_id=%s "
+            "UNION ALL SELECT s.id,c.depth+1 FROM chain c JOIN chat.principal_continuations p "
+            "ON p.session_id=c.id JOIN chat.principal_sessions s ON s.id=p.parent_session_id "
+            "WHERE c.depth<32 AND s.delegator_key=%s AND s.human_id=%s "
+            "AND s.agent_id=%s AND s.project_id=%s) "
+            "SELECT 1 FROM chain WHERE id=%s LIMIT 1",
+            (
+                binding.session_id,
+                binding.delegator,
+                *binding.ids.values(),
+                binding.delegator,
+                *binding.ids.values(),
+                historical,
+            ),
+        ).fetchone()
+        return row is not None
 
     def require(self, delegator, session_id):
         with self.connection_factory() as conn:
