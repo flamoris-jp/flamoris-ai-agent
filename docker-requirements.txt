@@ -36,4 +36,4 @@ typing-inspection==0.4.4
 uvicorn==0.54.0
 
 # MCP-independent Updater SDK, pinned source.
-flamoris-update-core[owner] @ https://github.com/flamoris-jp/flamoris-updater/archive/d5ec3408d2a9b43ce44efef6ab8209a6b8ffad25.zip#subdirectory=packages/update-core
+flamoris-update-core[owner] @ https://github.com/flamoris-jp/flamoris-updater/archive/797d6f4e7bd4089e7c162fa50c10a0afae68370a.zip#subdirectory=packages/update-core

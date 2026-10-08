@@ -9,7 +9,7 @@ description = "Persistent FLAMORIS Agent runtime"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
-dependencies = ["flamoris-update-core[owner] @ https://github.com/flamoris-jp/flamoris-updater/archive/d5ec3408d2a9b43ce44efef6ab8209a6b8ffad25.zip#subdirectory=packages/update-core", "httpx>=0.28,<1", "httpx2>=2.13,<3", "psycopg[binary]>=3.2,<4", "python-dotenv>=1,<2", "mcp>=2.2,<3", "pydantic>=2.11,<3", "starlette>=1.7,<2", "uvicorn>=0.54,<1", "flamoris-intelligence-mcp @ https://github.com/flamoris-jp/flamoris-intelligence-mcp/archive/274fc9196036a937f7059caac861ada2346d09e7.zip"]
+dependencies = ["flamoris-update-core[owner] @ https://github.com/flamoris-jp/flamoris-updater/archive/797d6f4e7bd4089e7c162fa50c10a0afae68370a.zip#subdirectory=packages/update-core", "httpx>=0.28,<1", "httpx2>=2.13,<3", "psycopg[binary]>=3.2,<4", "python-dotenv>=1,<2", "mcp>=2.2,<3", "pydantic>=2.11,<3", "starlette>=1.7,<2", "uvicorn>=0.54,<1", "flamoris-intelligence-mcp @ https://github.com/flamoris-jp/flamoris-intelligence-mcp/archive/f791bf236342e7c831e4d0291709bacb2f0e54bc.zip"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.14,<1", "build>=1.2,<2"]

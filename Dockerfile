@@ -5,7 +5,7 @@ COPY src/ ./src/
 COPY agents/ ./agents/
 RUN python -m pip install --no-cache-dir hatchling==1.32.4 \
     && python -m pip wheel --no-cache-dir --no-deps --wheel-dir /wheels \
-       'flamoris-intelligence-mcp @ https://github.com/flamoris-jp/flamoris-intelligence-mcp/archive/274fc9196036a937f7059caac861ada2346d09e7.zip' \
+       'flamoris-intelligence-mcp @ https://github.com/flamoris-jp/flamoris-intelligence-mcp/archive/f791bf236342e7c831e4d0291709bacb2f0e54bc.zip' \
     && python -m pip wheel --no-cache-dir --find-links=/wheels --wheel-dir /wheels -r docker-requirements.txt \
     && python -m pip wheel --no-cache-dir --no-deps --no-build-isolation --wheel-dir /wheels .
 

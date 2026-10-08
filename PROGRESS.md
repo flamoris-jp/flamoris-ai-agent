@@ -33,7 +33,7 @@ See [Updater contract](docs/UPDATER.md).
 ## Pre-deployment dependency refresh
 
 The SDK now targets merged Updater revision
-`d5ec3408d2a9b43ce44efef6ab8209a6b8ffad25`, and Intelligence targets merged
-dependency refresh `274fc9196036a937f7059caac861ada2346d09e7`. Review and CI at
+`797d6f4e7bd4089e7c162fa50c10a0afae68370a`, and Intelligence targets merged
+dependency refresh `f791bf236342e7c831e4d0291709bacb2f0e54bc`. Review and CI at
 these exact revisions are pending. No runtime, release, data or host state was
 changed.
