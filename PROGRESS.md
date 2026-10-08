@@ -2,29 +2,29 @@
 
 ## Updater adoption — 2026-10-08
 
-Entry release target: 1.0.0. Source adds durable admission and an independent
-mTLS Owner with application-owned schema/resource inspection. Review/testing
-and matched dependency wiring are in progress. No release or live update is
-claimed. See [Updater contract](docs/UPDATER.md).
+Entry release target: **1.0.0**. Independent mTLS Owner and durable admission
+source are implemented; source review/fixes and CI integration are complete.
+PR [#45](https://github.com/flamoris-jp/flamoris-ai-agent/pull/45) is prepared for human
+review. Release publication and real-host adoption remain pending.
 
+## Verification
 
-## Updater entry review checkpoint
+Local full suite: **175 passed, 34 database tests skipped locally**. All seven application wheel-from-sdist builds and
+declared Owner entrypoint/module checks passed. The operator made Updater public,
+resolving the initial SDK download 404. SDK source remains pinned to
+`d9f010a92ff6e8a1e7a3b7fad8817850bdfb72cd` (Updater PR #6).
 
-Independent Owner and durable admission are implemented; existing application
-state and unresolved work remain protected. Local complete suite: **175 passed, 34 skipped**.
-Ruff check/format passed. SDK pinned to
-d9f010a92ff6e8a1e7a3b7fad8817850bdfb72cd (Updater PR #6); owning
-Controller/Intelligence dependencies are pinned to their matched adoption commits.
-Final application CI remains under review. No release, trust/profile provisioning,
-provider call, enrollment or real-host change has been performed.
+[CI run 37768251469](https://github.com/flamoris-jp/flamoris-ai-agent/actions/runs/37768251469):
+209 passed against disposable PostgreSQL 16; test and container jobs succeeded. The container builds the separate Intelligence source wheel with --no-deps and checks the installed dependency graph with pip check.
+These results precede this progress-only commit; package/source dependency pins
+are unchanged. Cross-repository findings and exact evidence are recorded in
+Updater [ADOPTION_REVIEW.md](https://github.com/flamoris-jp/flamoris-updater/blob/feat/application-entry-v1/docs/ADOPTION_REVIEW.md).
 
+## Operational boundary
 
-### Public SDK and container review correction
-
-The operator changed Updater to public. Re-run CI resolves the pinned SDK and
-passes Agent tests, including real disposable PostgreSQL and installed-wheel
-smoke. Container CI caught two cryptography versions in the wheelhouse because
-the separate Intelligence wheel build also resolved unconstrained dependencies.
-Build that source wheel with --no-deps, then resolve all runtime dependencies
-from the existing fixed snapshot in one step. Runtime pip check verifies the
-installed dependency graph. Container re-verification is pending.
+The entry path preserves already current application schemas and retained data;
+unsupported schemas/resources and unknown outcomes remain blocked. No data/schema
+initialization, private profile/trust provisioning, release publication, live
+provider call, real-host update, enrollment or automatic merge occurred. Native
+deployment overlays and matched dependencies remain deployment-owned.
+See [Updater contract](docs/UPDATER.md).
