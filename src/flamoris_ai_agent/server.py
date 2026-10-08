@@ -73,7 +73,7 @@ def create_server(service=None):
         finally:
             await service.aclose()
 
-    server = MCPServer("FLAMORIS Agent", version="0.1.0", lifespan=lifespan, log_level="CRITICAL")
+    server = MCPServer("FLAMORIS Agent", version="1.0.0", lifespan=lifespan, log_level="CRITICAL")
 
     @server.tool(
         name="health",
@@ -183,10 +183,13 @@ def create_server(service=None):
 
 
 def main(argv=None):
+    from flamoris_update_core.admission import wait_for_admission
+
     parser = argparse.ArgumentParser(description="FLAMORIS Agent MCP")
-    parser.add_argument("--version", action="version", version="0.1.0")
+    parser.add_argument("--version", action="version", version="1.0.0")
     parser.add_argument("--transport", choices=("stdio", "streamable-http"), default="stdio")
     args = parser.parse_args(argv)
+    wait_for_admission("flamoris-ai-agent")
     if args.transport == "stdio":
         create_server().run(transport="stdio")
     else:

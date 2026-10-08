@@ -87,3 +87,8 @@ ExecuteFlowと既存ExecutionPlanはRuntime側、ComfyWorkFlowはComfyUI側で�
 ## Policy and license
 
 Follow the [FLAMORIS repository policy](https://github.com/flamoris-jp/flamoris-commons/blob/main/docs/repository-policy.md). Source and documentation are [Apache-2.0](LICENSE) unless otherwise noted. Models, weights, datasets, retrieved content, third-party prompts and generated media may have separate terms. Software is provided as-is without guaranteed individual support; repository documentation, Issues, tests and source are the primary references.
+
+## Updater entry release 1.0.0
+
+See [Updater compatibility](docs/UPDATER.md) for the implemented admission/Owner
+contract and pending signed release/private provisioning/real-host acceptance.

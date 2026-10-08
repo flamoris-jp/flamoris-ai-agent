@@ -4,6 +4,7 @@ import asyncio
 from uuid import UUID
 
 import anyio
+from flamoris_update_core.admission import guarded, register_boot
 from pydantic import BaseModel, ConfigDict, StrictStr, ValidationError, field_validator
 
 from flamoris_ai_agent.execution import MAX_USER_BYTES, IntelligenceError
@@ -37,6 +38,7 @@ class AgentService:
         self.session_factory = session_factory or (
             lambda request: configured_session(store=MCPStore(request))
         )
+        register_boot("flamoris-ai-agent")
         self.active = None
         self.closing = False
 
@@ -55,6 +57,7 @@ class AgentService:
             return {"ok": False, "error": {"code": "invalid_input"}}
         return await self._run(request, self.session_factory)
 
+    @guarded(rejection=lambda: {"ok": False, "error": {"code": "maintenance"}})
     async def _run(self, request, factory):
         if self.closing:
             return {"ok": False, "error": {"code": "shutting_down"}}

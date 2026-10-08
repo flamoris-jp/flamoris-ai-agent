@@ -5,6 +5,7 @@ import json
 import os
 from uuid import UUID, uuid4
 
+from flamoris_update_core.admission import guarded
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr, field_validator
 
@@ -221,6 +222,7 @@ class PersonalityStore:
             return {"revision": revision, "duplicate": False}
 
 
+@guarded()
 def import_personality(conn, agent_key, display_name, sections):
     body = PersonalityBody.model_validate(
         {

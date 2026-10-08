@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import anyio
+from flamoris_update_core.admission import guarded
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -103,6 +104,7 @@ class ScopedAgentService(AgentService):
             await asyncio.shield(asyncio.gather(task, return_exceptions=True))
         await super().aclose()
 
+    @guarded(rejection=lambda: {"ok": False, "error": {"code": "maintenance"}})
     async def continue_session(self, raw):
         caller = authenticated_delegator.get()
         if caller is None or not self.models or self.closing:
@@ -183,6 +185,7 @@ class ScopedAgentService(AgentService):
             context=request.context,
         )
 
+    @guarded(rejection=lambda: {"ok": False, "error": {"code": "maintenance"}})
     async def settings_operation(self, operation, raw):
         caller = authenticated_delegator.get()
         if caller is None or not self.settings_enabled or self.closing:
@@ -275,6 +278,7 @@ class ScopedAgentService(AgentService):
         # directly rather than through its separately versioned tool catalog.
         return {"ok": False, "error": {"code": "principal_required"}}
 
+    @guarded(rejection=lambda: {"ok": False, "error": {"code": "maintenance"}})
     async def open_session(self, raw):
         caller = authenticated_delegator.get()
         if caller is None:

@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 
+from flamoris_update_core.admission import guarded
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, model_validator
 
 from .execution import IntelligenceError
@@ -168,6 +169,7 @@ class ModelSettings:
             return option
 
 
+@guarded()
 def main():
     """Explicit operator registration of model identities; no provider calls/grants."""
     from . import db

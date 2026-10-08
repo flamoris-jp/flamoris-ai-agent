@@ -3,6 +3,8 @@
 import asyncio
 import os
 
+from flamoris_update_core.admission import guarded
+
 from flamoris_ai_agent.db import _required_env, get_connection
 from flamoris_ai_agent.register_runtime import register_configured_runtime
 
@@ -19,6 +21,7 @@ def _require_match(label: str, key: str, actual, expected) -> None:
         raise RuntimeError(f"{label} key {key!r} already exists with different identity metadata")
 
 
+@guarded()
 def setup_identity(conn) -> None:
     human_key = _required_env("FLAMORIS_HUMAN_KEY")
     human_name = _required_env("FLAMORIS_HUMAN_DISPLAY_NAME")
