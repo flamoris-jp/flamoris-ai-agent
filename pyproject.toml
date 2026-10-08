@@ -4,17 +4,18 @@ build-backend = "hatchling.build"
 
 [project]
 name = "flamoris-ai-agent"
-version = "0.1.0"
+version = "1.0.0"
 description = "Persistent FLAMORIS Agent runtime"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
-dependencies = ["httpx>=0.28,<1", "httpx2>=2.13,<3", "psycopg[binary]>=3.2,<4", "python-dotenv>=1,<2", "mcp>=2.2,<3", "pydantic>=2.11,<3", "starlette>=1.7,<2", "uvicorn>=0.54,<1", "flamoris-intelligence-mcp @ https://github.com/flamoris-jp/flamoris-intelligence-mcp/archive/5da9736e60c29ed549d16656ff7acac5d54bdb83.zip"]
+dependencies = ["flamoris-update-core[owner] @ https://github.com/flamoris-jp/flamoris-updater/archive/d9f010a92ff6e8a1e7a3b7fad8817850bdfb72cd.zip#subdirectory=packages/update-core", "httpx>=0.28,<1", "httpx2>=2.13,<3", "psycopg[binary]>=3.2,<4", "python-dotenv>=1,<2", "mcp>=2.2,<3", "pydantic>=2.11,<3", "starlette>=1.7,<2", "uvicorn>=0.54,<1", "flamoris-intelligence-mcp @ https://github.com/flamoris-jp/flamoris-intelligence-mcp/archive/f94f8934c749a67bc1401f08103d16a93b1721e0.zip"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.14,<1", "build>=1.2,<2"]
 
 [project.scripts]
+flamoris-ai-agent-update-owner = "flamoris_ai_agent.updater:main"
 flamoris-agent-register-targets = "flamoris_ai_agent.model_settings:main"
 flamoris-agent-import-personality = "flamoris_ai_agent.personality:main"
 flamoris-agent-chat = "flamoris_ai_agent.chat:main"

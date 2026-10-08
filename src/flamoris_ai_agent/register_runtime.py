@@ -8,6 +8,8 @@ import asyncio
 import os
 import platform
 
+from flamoris_update_core.admission import guarded
+
 from flamoris_ai_agent.db import _required_env, get_connection
 from flamoris_ai_agent.intelligence import IntelligenceClient
 
@@ -48,6 +50,7 @@ def register(conn, *, host_key: str, model_key: str, served_model: str):
             raise RuntimeError(f"Model key {model_key!r} already identifies a different model")
 
 
+@guarded()
 async def register_configured_runtime():
     client = IntelligenceClient(
         os.getenv("INTELLIGENCE_BASE_URL", "http://127.0.0.1:8081"),

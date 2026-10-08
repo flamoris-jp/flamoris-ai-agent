@@ -11,7 +11,7 @@ httpcore==1.0.9
 httpcore2==2.13.1
 httpx==0.28.1
 httpx2==2.13.1
-flamoris-intelligence-mcp==0.2.0
+flamoris-intelligence-mcp==1.0.0
 idna==3.20
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
@@ -34,3 +34,6 @@ truststore==0.10.4
 typing_extensions==4.16.0
 typing-inspection==0.4.4
 uvicorn==0.54.0
+
+# MCP-independent Updater SDK, pinned source.
+flamoris-update-core[owner] @ https://github.com/flamoris-jp/flamoris-updater/archive/d9f010a92ff6e8a1e7a3b7fad8817850bdfb72cd.zip#subdirectory=packages/update-core

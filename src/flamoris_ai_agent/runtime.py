@@ -4,6 +4,8 @@ import asyncio
 import json
 import os
 
+from flamoris_update_core.admission import LifecycleLease, guarded
+
 from flamoris_ai_agent import db, prompts
 from flamoris_ai_agent.config import AgentContextError
 from flamoris_ai_agent.execution import (
@@ -105,6 +107,14 @@ class AgentSession:
         self.instance_id = None
 
     async def start(self, *, load_previous=False):
+        self.update_lease = LifecycleLease()
+        try:
+            return await self._start(load_previous=load_previous)
+        except BaseException:
+            self.update_lease.finish(known=False)
+            raise
+
+    async def _start(self, *, load_previous=False):
         if self.started or self.closed or self.failed:
             raise IntelligenceError("invalid_lifecycle")
         try:
@@ -143,6 +153,7 @@ class AgentSession:
             self.failed = True
             raise IntelligenceError("startup_failed") from None
 
+    @guarded(IntelligenceError)
     async def ask(self, text: str, *, metadata=None):
         if not self.started or self.closed or self.failed:
             raise IntelligenceError("invalid_lifecycle")
@@ -205,13 +216,23 @@ class AgentSession:
         if self.closed:
             return
         self.closed = True
+        cleanup_known = False
         try:
             try:
                 self.store.close()
+                cleanup_known = True
             except Exception:
                 raise IntelligenceError("cleanup_failed") from None
         finally:
-            await self.client.aclose()
+            try:
+                await self.client.aclose()
+            except BaseException:
+                cleanup_known = False
+                raise
+            finally:
+                lease = getattr(self, "update_lease", None)
+                if lease is not None:
+                    lease.finish(known=cleanup_known and not self.failed)
 
 
 def configured_session(
