@@ -1,0 +1,34 @@
+name: Build reviewed v1 release candidate
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 8ac1e9555355a5cbb255e8939f43ad041a0d221c
+      - name: Verify exact reviewed source
+        run: test "$(git rev-parse HEAD)" = "8ac1e9555355a5cbb255e8939f43ad041a0d221c"
+      - name: Build candidate image
+        run: docker build --pull --tag flamoris-ai-agent:1.0.0 .
+      - name: Import smoke
+        run: docker run --rm --entrypoint python flamoris-ai-agent:1.0.0 -c "import flamoris_ai_agent"
+      - name: Export immutable candidate
+        shell: bash
+        run: |
+          mkdir -p candidate
+          docker image inspect --format '{{.Id}}' flamoris-ai-agent:1.0.0 > candidate/image-id.txt
+          docker save flamoris-ai-agent:1.0.0 | gzip -n -9 > candidate/flamoris-ai-agent-1.0.0-linux-amd64.docker.tar.gz
+          sha256sum candidate/flamoris-ai-agent-1.0.0-linux-amd64.docker.tar.gz > candidate/SHA256SUMS
+          printf '%s\n' '{"format_version":1,"application":"flamoris-ai-agent","release":"1.0.0","platform":"linux/amd64","source_revision":"8ac1e9555355a5cbb255e8939f43ad041a0d221c"}' > candidate/provenance.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flamoris-ai-agent-1.0.0-linux-amd64
+          path: candidate/
+          retention-days: 3
