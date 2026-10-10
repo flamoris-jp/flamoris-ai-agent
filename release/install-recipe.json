@@ -1,0 +1,193 @@
+{
+  "application_id": "flamoris-ai-agent",
+  "sql_files": [
+    "db/01_schema.sql",
+    "db/migrations/002_principal_sessions.sql",
+    "db/migrations/003_principal_retention.sql",
+    "db/migrations/004_assistant_settings.sql",
+    "db/migrations/005_model_continuations.sql"
+  ],
+  "recipe": {
+    "application_id": "flamoris-ai-agent",
+    "release": "1.0.1",
+    "platform": "linux/amd64",
+    "compatible_from": [],
+    "dependencies": {},
+    "settings": [
+      {
+        "key": "PORT",
+        "label": "待受ポート",
+        "default": "8768",
+        "secret": false,
+        "required": false,
+        "generate": false,
+        "kind": "port"
+      },
+      {
+        "key": "ADMIN_DSN",
+        "label": "PostgreSQL管理者の接続文字列",
+        "default": "",
+        "secret": true,
+        "required": true,
+        "generate": false,
+        "kind": "text"
+      },
+      {
+        "key": "PGHOST",
+        "label": "PostgreSQLホスト（ホスト・コンテナ双方から到達可能）",
+        "default": "",
+        "secret": false,
+        "required": true,
+        "generate": false,
+        "kind": "text"
+      },
+      {
+        "key": "PGPORT",
+        "label": "PostgreSQLポート",
+        "default": "5432",
+        "secret": false,
+        "required": false,
+        "generate": false,
+        "kind": "port"
+      },
+      {
+        "key": "DATABASE",
+        "label": "新しく作成するDB名",
+        "default": "flamoris_ai",
+        "secret": false,
+        "required": false,
+        "generate": false,
+        "kind": "name"
+      },
+      {
+        "key": "OWNER_PASSWORD",
+        "label": "新規DB所有者パスワード（空欄で生成）",
+        "default": "",
+        "secret": true,
+        "required": false,
+        "generate": true,
+        "kind": "url_password"
+      },
+      {
+        "key": "RUNTIME_PASSWORD",
+        "label": "アプリ用DBパスワード（空欄で生成）",
+        "default": "",
+        "secret": true,
+        "required": false,
+        "generate": true,
+        "kind": "url_password"
+      },
+      {
+        "key": "AGENT_TOKEN",
+        "label": "Agentサービス接続トークン（空欄で生成）",
+        "default": "",
+        "secret": true,
+        "required": false,
+        "generate": true,
+        "kind": "url_password"
+      },
+      {
+        "key": "INTELLIGENCE_URL",
+        "label": "既存llama.cppのURL",
+        "default": "http://127.0.0.1:8081",
+        "secret": false,
+        "required": false,
+        "generate": false,
+        "kind": "text"
+      },
+      {
+        "key": "DELEGATOR_KEY",
+        "label": "Studio委譲者キー（空欄は単一principal）",
+        "default": "",
+        "secret": false,
+        "required": false,
+        "generate": false,
+        "kind": "text"
+      }
+    ],
+    "downloads": {},
+    "generated": {
+      "admin.dsn": "${ADMIN_DSN}",
+      "owner.password": "${OWNER_PASSWORD}",
+      "runtime.password": "${RUNTIME_PASSWORD}",
+      "runtime.env": "AGENT_HTTP_HOST=127.0.0.1\nAGENT_HTTP_PORT=${PORT}\nAGENT_MCP_TOKEN=${AGENT_TOKEN}\nPGHOST=${PGHOST}\nPGPORT=${PGPORT}\nPGDATABASE=${DATABASE}\nPGUSER=flamoris_ai_app\nPGPASSWORD=${RUNTIME_PASSWORD}\nINTELLIGENCE_BASE_URL=${INTELLIGENCE_URL}\nAGENT_HTTP_DELEGATOR_KEY=${DELEGATOR_KEY}\n"
+    },
+    "application": {
+      "application_id": "flamoris-ai-agent",
+      "release": "1.0.1",
+      "directories": [
+        {
+          "path": "${root}/config"
+        }
+      ],
+      "files": [
+        {
+          "source": {
+            "path": "${package}/runtime.env",
+            "digest": "generated",
+            "private": true
+          },
+          "destination": "${root}/config/runtime.env"
+        }
+      ],
+      "health_url": "http://127.0.0.1:${PORT}/healthz",
+      "kind": "docker",
+      "image_archive": {
+        "path": "${package}/image.tar",
+        "digest": "artifact",
+        "private": false
+      },
+      "image_id": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "container_name": "flamoris-ai-agent",
+      "environment_file": "${root}/config/runtime.env",
+      "mounts": [],
+      "database": {
+        "name": "${DATABASE}",
+        "admin_dsn": {
+          "path": "${package}/admin.dsn",
+          "digest": "generated",
+          "private": true
+        },
+        "owner": "flamoris_ai_owner",
+        "runtime_role": "flamoris_ai_app",
+        "owner_password": {
+          "path": "${package}/owner.password",
+          "digest": "generated",
+          "private": true
+        },
+        "runtime_password": {
+          "path": "${package}/runtime.password",
+          "digest": "generated",
+          "private": true
+        },
+        "sql_files": [
+          {
+            "path": "${package}/db/01_schema.sql",
+            "digest": "artifact",
+            "private": false
+          },
+          {
+            "path": "${package}/db/migrations/002_principal_sessions.sql",
+            "digest": "artifact",
+            "private": false
+          },
+          {
+            "path": "${package}/db/migrations/003_principal_retention.sql",
+            "digest": "artifact",
+            "private": false
+          },
+          {
+            "path": "${package}/db/migrations/004_assistant_settings.sql",
+            "digest": "artifact",
+            "private": false
+          },
+          {
+            "path": "${package}/db/migrations/005_model_continuations.sql",
+            "digest": "artifact",
+            "private": false
+          }
+        ]
+      }
+    }
+  }
+}
