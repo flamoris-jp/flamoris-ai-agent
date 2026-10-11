@@ -1,3 +1,5 @@
-# flamoris-ai-agent v1.0.1
+# flamoris-ai-agent v1.0.2
 
 このリポジトリ自身のUpdater配布物とカタログを公開するパッチ版です。amd64/arm64向け配布物はカタログから個別取得できます。初回設定、GPU/モデル動作、実機への導入は別の作業です。既存の集中配布は上書きしません。詳しくはdocs/UPDATER.mdを参照してください。
+
+Docker images now declare the application/version labels required by the Updater installer. Fresh-install recipes remain owned by this repository.
