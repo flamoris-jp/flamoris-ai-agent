@@ -1,9 +1,9 @@
-# Repository-owned Updater release 1.0.1
+# Repository-owned Updater release 1.0.2
 
 このリポジトリがソース・ビルド・Release・配布物・インストールカタログを管理します。Updaterは配布物を集め直さず、カタログに記載したこのリポジトリのReleaseから、選択したアプリとCPU向けのファイルだけを取得します。
 
 公開成功後のカタログURL：
-`https://github.com/flamoris-jp/flamoris-ai-agent/releases/download/v1.0.1/catalog.json`
+`https://github.com/flamoris-jp/flamoris-ai-agent/releases/download/v1.0.2/catalog.json`
 
 `.github/workflows/publish-updater-release.yml` はこのアプリだけをamd64/arm64でビルドし、固定image IDまたは完全なoffline wheelhouse、ファイルのSHA-256、設定と起動方法をカタログへ記録します。`release/install-recipe.json` がアプリ所有のインストール定義です。公開前にUpdater自身の型と実際のprofile展開処理で検証します。検証用のUpdater依存はCIツール環境だけに入れ、アプリのランタイムへは追加しません。
 

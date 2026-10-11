@@ -9,7 +9,7 @@
   ],
   "recipe": {
     "application_id": "flamoris-ai-agent",
-    "release": "1.0.1",
+    "release": "1.0.2",
     "platform": "linux/amd64",
     "compatible_from": [],
     "dependencies": {},
@@ -114,7 +114,7 @@
     },
     "application": {
       "application_id": "flamoris-ai-agent",
-      "release": "1.0.1",
+      "release": "1.0.2",
       "directories": [
         {
           "path": "${root}/config"

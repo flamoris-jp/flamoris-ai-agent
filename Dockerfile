@@ -10,6 +10,8 @@ RUN python -m pip install --no-cache-dir hatchling==1.32.4 \
     && python -m pip wheel --no-cache-dir --no-deps --no-build-isolation --wheel-dir /wheels .
 
 FROM python:3.12-slim-bookworm
+LABEL org.opencontainers.image.title="flamoris-ai-agent" \
+    org.opencontainers.image.version="1.0.2"
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     AGENT_HTTP_HOST=0.0.0.0 \
